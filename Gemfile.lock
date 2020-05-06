@@ -1,0 +1,17 @@
+PATH
+  remote: .
+  specs:
+    crystal_gem_template (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  crystal_gem_template!
+
+BUNDLED WITH
+   1.17.3
