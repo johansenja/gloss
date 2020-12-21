@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "hrb"
+
+pn = ARGV[0]
+
+raise "no path specified" unless pn
+
+content = File.read(pn)
+
+Hrb::Program.new(content).output

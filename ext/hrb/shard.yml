@@ -1,12 +1,12 @@
-name: crysal_gem_template
+name: hrb
 version: 0.1.0
 
 authors:
   - johansenja
 
 targets:
-  crystal_gem_template:
-    main: src/crystal_gem_template.cr
+  hrb:
+    main: ./hrb.cr
 #
 # add dependencies and development_dependencies:
 # dependencies:

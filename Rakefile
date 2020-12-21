@@ -1,13 +1,21 @@
+require 'bundler'
+Bundler.setup
+
+require 'rake'
+require 'rake/extensiontask'
+require 'rubygems/package_task'
+require 'rspec/core/rake_task'
 require "bundler/gem_tasks"
 
-desc "compile the Crystal native extensions"
-task :compile do
-  puts "compiling native extensions"
-  `cd ext/crystal_gem_template && shards && make clean && make & cd ../../`
+gem = Gem::Specification.load(File.dirname(__FILE__) + '/hrb.gemspec' )
+Rake::ExtensionTask.new('hrb', gem )
+
+Gem::PackageTask.new gem  do |pkg|
+  pkg.need_zip = pkg.need_tar = false
 end
 
-desc "cleaning up compiled binaries"
-task :clean do
-  puts "cleaning up extensions"
-  `cd ext/crystal_gem_template && make clean && cd ../../`
+RSpec::Core::RakeTask.new :spec  do |spec|
+  spec.pattern = 'spec/**/*_spec.rb'
 end
+
+task :default => [:compile, :spec]
