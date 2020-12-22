@@ -81,10 +81,10 @@ module Rb
 
       def initialize(name : Path, body : Node, type_vars : Array(String)?)
         @info = {
-          type:       self.class.name.split("::").last,
-          name:       name,
-          body:       body,
-          type_vars:  type_vars,
+          type:      self.class.name.split("::").last,
+          name:      name,
+          body:      body,
+          type_vars: type_vars,
           # visiblity:   vis,
         }
       end
@@ -209,14 +209,31 @@ module Rb
     class Unless < Conditional
     end
 
-    class Assign < Node
-      @info : NamedTuple(type: String, target: Node, value: Node)
+    class Case < Node
+      @info : NamedTuple(type: String, condition: Node?, whens: Array(When), else: Node?, exhaustive: Bool)
 
-      def initialize(@target : Node, @value : Node)
+      def initialize(cond : Node?, whens : Array(When), els : Node?, exhaustive : Bool)
         @info = {
-          type:   self.class.name.split("::").last,
-          target: @target,
-          value:  @value,
+          type:       self.class.name.split("::").last,
+          condition:  cond,
+          whens:      whens,
+          else:       els,
+          exhaustive: exhaustive,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class When < Node
+      @info : NamedTuple(type: String, conditions: Array(Node), body: Node, exhaustive: Bool)
+
+      def initialize(conds : Array(Node), body : Node, exhaustive : Bool)
+        @info = {
+          type:       self.class.name.split("::").last,
+          conditions: conds,
+          body:       body,
+          exhaustive: exhaustive,
         }
       end
 
@@ -242,10 +259,10 @@ module Rb
 
       def initialize(object : Node?, name : String, args : Array(Node))
         @info = {
-          type: self.class.name.split("::").last,
-          name: name,
-          args: args,
-          object: object
+          type:   self.class.name.split("::").last,
+          name:   name,
+          args:   args,
+          object: object,
         }
       end
 
@@ -256,6 +273,64 @@ module Rb
     end
 
     class Require < NodeWithValue
+    end
+
+    class StringInterpolation < Node
+      @info : NamedTuple(type: String, contents: Array(Node))
+
+      def initialize(contents)
+        @info = {
+          type: self.class.name.split("::").last,
+          contents: contents
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class UnaryExpr < Node
+      @info : NamedTuple(type: String, op: String, value: Node, with_parens: Bool)
+
+      def initialize(val, op, parens)
+        @info = {
+          type:  self.class.name.split("::").last,
+          value: val,
+          op: op,
+          with_parens: parens
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class BinaryOp < Node
+      @info : NamedTuple(type: String, op: String, left: Node, right: Node)
+
+      def initialize(op, left, right)
+        @info = {
+          type:  self.class.name.split("::").last,
+          left:  left,
+          op:    op,
+          right: right,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class Assign < Node
+      @info : NamedTuple(type: String, op: String?, target: Node, value: Node)
+
+      def initialize(target, value, op = nil)
+        @info = {
+          type:  self.class.name.split("::").last,
+          target:  target,
+          op:    op,
+          value: value,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
 
     class TypeDeclaration < Node

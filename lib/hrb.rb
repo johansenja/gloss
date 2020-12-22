@@ -22,8 +22,7 @@ class Source < String
   end
 
   def write_ln(*args)
-    write_indnt(*args)
-    write "\n"
+    write_indnt(*args.map { |a| a.strip << "\n" })
   end
 end
 
@@ -89,14 +88,26 @@ module Hrb
         obj = node[:object] ? "#{visit_node(node[:object])}." : ""
         args = node[:args]
         args = if args && !args.empty?
-                 "(#{node[:args].map { |a| visit_node(a) }.reject(&:blank?).join(", ")})"
+                 "(#{node[:args].map { |a| visit_node(a).strip }.reject(&:blank?).join(", ")})"
                else
                  nil
                end
-        src.write_indnt "#{obj}#{node[:name]}#{args}"
+        src.write_ln "#{obj}#{node[:name]}#{args}"
       when "LiteralNode"
 
         src.write node[:value]
+
+      when "StringInterpolation"
+
+        contents = node[:contents].inject(String.new) do |str, c|
+          str << case c[:type]
+                 when "LiteralNode"
+                   c[:value][1...-1]
+                 else
+                   "\#{#{visit_node(c).strip}}"
+                 end
+        end
+        src.write '"', contents, '"'
 
       when "Path"
 
@@ -106,9 +117,9 @@ module Hrb
 
         src.write_ln %(require "#{node[:value]}")
 
-      when "Assign"
+      when "Assign", "OpAssign"
 
-        src.write_ln "#{visit_node(node[:target])} = #{visit_node(node[:value])}"
+        src.write_ln "#{visit_node(node[:target])} #{node[:op]}= #{visit_node(node[:value]).strip}"
 
       when "Var", "InstanceVar"
 
@@ -120,6 +131,14 @@ module Hrb
       when "Arg"
 
         src.write node[:name]
+
+      when "UnaryExpr"
+
+        src.write "#{node[:op]}#{visit_node(node[:value]).strip}"
+
+      when "BinaryOp"
+
+        src.write visit_node(node[:left]).strip, " #{node[:op]} ", visit_node(node[:right]).strip
 
       when "HashLiteral"
 
@@ -136,7 +155,7 @@ module Hrb
         end
         src.write_ln "end"
       when "If"
-        src.write_ln "(if #{visit_node(node[:condition])}"
+        src.write_ln "(if #{visit_node(node[:condition]).strip}"
 
         increment_indent
 
@@ -158,6 +177,18 @@ module Hrb
       when "TypeDeclaration"
         # pass for now
         src = ""
+      when "Case"
+        src.write "case"
+        src.write " #{visit_node(node[:condition]).strip}\n" if node[:condition]
+        increment_indent
+        node[:whens].each do |w|
+          src.write_ln visit_node(w)
+        end
+        decrement_indent
+        src.write_ln "end"
+      when "When"
+        src.write_ln "when #{node[:conditions].map { |n| visit_node(n) }.join(", ")}"
+        src.write_ln visit_node(node[:body])
       else
         raise "Not implemented: #{node[:type]}"
       end

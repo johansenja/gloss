@@ -55,7 +55,7 @@ module Crystal
 
   class StringInterpolation < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new("", Rb::AST::RbLiteral::String)
+      Rb::AST::StringInterpolation.new(@expressions.map &.to_rb)
     end
   end
 
@@ -164,7 +164,7 @@ module Crystal
 
   class OpAssign < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::Assign.new(@target.to_rb, @value.to_rb, @op)
     end
   end
 
@@ -264,10 +264,61 @@ module Crystal
     end
   end
 
+  class Case < ASTNode
+    def to_rb
+      Rb::AST::Case.new(
+        @cond.try(&.to_rb),
+        @whens.map(&.to_rb),
+        @else.try(&.to_rb),
+        @exhaustive
+      )
+    end
+  end
+
+  class When < ASTNode
+    def to_rb
+      Rb::AST::When.new(
+        @conds.map(&.to_rb),
+        @body.to_rb,
+        @exhaustive
+      )
+    end
+  end
+
+  {% for class_name in %w[Splat DoubleSplat Not] %}
+    class {{class_name.id}} < UnaryExpression
+      def to_rb
+        {% if class_name == "Splat" %}
+          op = "*"
+        {% elsif class_name == "DoubleSplat" %}
+          op = "**"
+        {% else %}
+          op = "!"
+        {% end %}
+        # for some of the other unary expressions, parentheses are normally used by convention eg.
+        # pointerof - but they are definitely lower priority
+        requires_parentheses = true
+        Rb::AST::UnaryExpr.new(
+          @exp.to_rb,
+          op,
+          requires_parentheses
+        )
+      end
+    end
+  {% end %}
+
   {% for class_name in %w[And Or] %}
     class {{class_name.id}} < BinaryOp
       def to_rb
-        Rb::AST::EmptyNode.new(self.class.name)
+        Rb::AST::BinaryOp.new(
+          {% if class_name == "And" %}
+            "&&",
+          {% else %}
+            "||",
+          {% end %}
+          @left.to_rb,
+          @right.to_rb
+        )
       end
     end
   {% end %}
@@ -280,7 +331,7 @@ module Crystal
     end
   {% end %}
 
-  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo When Case
+  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
                          Select ImplicitObj AnnotationDef While Until Generic UninitializedVar
                          Rescue ExceptionHandler ProcLiteral ProcPointer Union Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
@@ -293,7 +344,7 @@ module Crystal
     end
   {% end %}
 
-  {% for class_name in %w[Not PointerOf SizeOf InstanceSizeOf Out MacroVerbatim Splat DoubleSplat] %}
+  {% for class_name in %w[PointerOf SizeOf InstanceSizeOf Out MacroVerbatim DoubleSplat] %}
     class {{class_name.id}} < UnaryExpression
       def to_rb
         Rb::AST::EmptyNode.new(self.class.name)
