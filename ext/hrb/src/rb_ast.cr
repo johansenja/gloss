@@ -42,13 +42,14 @@ module Rb
       delegate :to_json, to: @info
     end
 
-    abstract class NodeWithSingleChild < Node
-      @info : NamedTuple(type: String, child: Node)
+    class Block < Node
+      @info : NamedTuple(type: String, args: Array(Var), body: Node)
 
-      def initialize(@child : Node)
+      def initialize(args, body)
         @info = {
-          type:  self.class.name.split("::").last,
-          child: child,
+          type: self.class.name.split("::").last,
+          body: body,
+          args: args,
         }
       end
 
@@ -138,13 +139,35 @@ module Rb
       delegate :to_json, to: @info
     end
 
-    class ArrayLiteral < NodeWithValue
+    class ArrayLiteral < Node
+      @info : NamedTuple(type: String, elements: Array(Node))
+
+      def initialize(elems)
+        @info = {
+          type:  self.class.name.split("::").last,
+          elements: elems,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
 
     class HashLiteral < NodeWithValue
     end
 
-    class RangeLiteral < NodeWithValue
+    class RangeLiteral < Node
+      @info : NamedTuple(type: String, from: Node, to: Node, exclusive: Bool)
+
+      def initialize(from, to, exclusive)
+        @info = {
+          type:      self.class.name.split("::").last,
+          from:      from,
+          to:        to,
+          exclusive: exclusive,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
 
     class RegexLiteral < NodeWithValue
@@ -183,9 +206,6 @@ module Rb
     end
 
     class InstanceVar < Var
-    end
-
-    class Block < NodeWithSingleChild
     end
 
     abstract class Conditional < Node
@@ -255,14 +275,15 @@ module Rb
     end
 
     class Call < Node
-      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?)
+      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?)
 
-      def initialize(object : Node?, name : String, args : Array(Node))
+      def initialize(object : Node?, name : String, args : Array(Node), block)
         @info = {
           type:   self.class.name.split("::").last,
           name:   name,
           args:   args,
           object: object,
+          block:  block,
         }
       end
 
@@ -280,8 +301,8 @@ module Rb
 
       def initialize(contents)
         @info = {
-          type: self.class.name.split("::").last,
-          contents: contents
+          type:     self.class.name.split("::").last,
+          contents: contents,
         }
       end
 
@@ -293,10 +314,10 @@ module Rb
 
       def initialize(val, op, parens)
         @info = {
-          type:  self.class.name.split("::").last,
-          value: val,
-          op: op,
-          with_parens: parens
+          type:        self.class.name.split("::").last,
+          value:       val,
+          op:          op,
+          with_parens: parens,
         }
       end
 
@@ -323,10 +344,10 @@ module Rb
 
       def initialize(target, value, op = nil)
         @info = {
-          type:  self.class.name.split("::").last,
-          target:  target,
-          op:    op,
-          value: value,
+          type:   self.class.name.split("::").last,
+          target: target,
+          op:     op,
+          value:  value,
         }
       end
 
@@ -342,6 +363,38 @@ module Rb
           var:           @var,
           declared_type: @declared_type,
           value:         @value,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class MacroFor < Node
+      @info : NamedTuple(type: String, vars: Array(Var), expr: Node, body: Node)
+
+      def initialize(vars, expr, body)
+        @info = {
+          type: self.class.name.split("::").last,
+          vars: vars,
+          expr: expr,
+          body: body,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class MacroLiteral < NodeWithValue
+    end
+
+    class MacroExpression < Node
+      @info : NamedTuple(type: String, expr: Node, output: Bool)
+
+      def initialize(expr, output)
+        @info = {
+          type: self.class.name.split("::").last,
+          expr: expr,
+          output: output,
         }
       end
 

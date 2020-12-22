@@ -67,7 +67,7 @@ module Crystal
 
   class ArrayLiteral < ASTNode
     def to_rb
-      Rb::AST::ArrayLiteral.new("[]")
+      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb))
     end
   end
 
@@ -85,19 +85,19 @@ module Crystal
 
   class RangeLiteral < ASTNode
     def to_rb
-      Rb::AST::RangeLiteral.new("0..0")
+      Rb::AST::RangeLiteral.new(@from.to_rb, @to.to_rb, @exclusive)
     end
   end
 
   class RegexLiteral < ASTNode
     def to_rb
-      Rb::AST::RangeLiteral.new("//")
+      Rb::AST::RegexLiteral.new("//")
     end
   end
 
   class TupleLiteral < ASTNode
     def to_rb
-      Rb::AST::ArrayLiteral.new("[]")
+      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb))
     end
   end
 
@@ -128,13 +128,13 @@ module Crystal
 
   class Block < ASTNode
     def to_rb
-      Rb::AST::Block.new(@body.to_rb)
+      Rb::AST::Block.new(@args.map(&.to_rb), @body.to_rb)
     end
   end
 
   class Call < ASTNode
     def to_rb
-      Rb::AST::Call.new(@obj.try(&.to_rb), @name, @args.map(&.to_rb))
+      Rb::AST::Call.new(@obj.try(&.to_rb), @name, @args.map(&.to_rb), @block.try(&.to_rb))
     end
   end
 
@@ -218,13 +218,25 @@ module Crystal
 
   class MacroFor < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::MacroFor.new(@vars.map(&.to_rb), @exp.to_rb, @body.to_rb)
     end
   end
 
   class MacroVar < ASTNode
     def to_rb
       Rb::AST::EmptyNode.new(self.class.name)
+    end
+  end
+
+  class MacroExpression < ASTNode
+    def to_rb
+      Rb::AST::MacroExpression.new(@exp.to_rb, @output)
+    end
+  end
+
+  class MacroLiteral < ASTNode
+    def to_rb
+      Rb::AST::MacroLiteral.new(@value)
     end
   end
 
@@ -335,7 +347,7 @@ module Crystal
                          Select ImplicitObj AnnotationDef While Until Generic UninitializedVar
                          Rescue ExceptionHandler ProcLiteral ProcPointer Union Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
-                         Metaclass Cast NilableCast TypeOf Annotation MacroExpression MacroLiteral
+                         Metaclass Cast NilableCast TypeOf Annotation
                          Underscore MagicConstant Asm AsmOperand] %}
     class {{class_name.id}} < ASTNode
       def to_rb

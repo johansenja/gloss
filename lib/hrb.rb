@@ -24,6 +24,14 @@ class Source < String
   def write_ln(*args)
     write_indnt(*args.map { |a| a.strip << "\n" })
   end
+
+  def increment_indent
+    @indent_level += 1
+  end
+
+  def decrement_indent
+    @indent_level -= 1
+  end
 end
 
 module Hrb
@@ -32,6 +40,7 @@ module Hrb
 
     def initialize(str)
       @indent_level = 0
+      @inside_macro = false
       tree_json = Hrb.parse_buffer str
       if tree_json
         @tree = JSON.parse tree_json, symbolize_names: true
@@ -44,7 +53,7 @@ module Hrb
       puts visit_node(@tree)
     end
 
-    def visit_node(node)
+    def visit_node(node, scope = {})
       src = Source.new(@indent_level)
       case node[:type]
       when "ClassNode"
@@ -53,37 +62,25 @@ module Hrb
 
         src.write_ln "class #{class_name}#{" < #{superclass}" if superclass}"
 
-        increment_indent
-
-        src.write_ln visit_node(node[:body]) if node[:body]
-
-        decrement_indent
+        indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
       when "ModuleNode"
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
 
-        increment_indent
-
-        src.write_ln visit_node(node[:body]) if node[:body]
-
-        decrement_indent
+        indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
       when "DefNode"
         args = node[:args].empty? ? nil : "(#{node[:args].map { |a| visit_node(a) }.join(", ")})"
         src.write_ln "def #{node[:name]}#{args}"
 
-        increment_indent
-
-        src.write_ln visit_node(node[:body]) if node[:body]
-
-        decrement_indent
+        indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
       when "CollectionNode"
-        src.write_ln(*node[:children].map { |a| visit_node(a) })
+        src.write_ln(*node[:children].map { |a| visit_node(a, scope) })
       when "Call"
         obj = node[:object] ? "#{visit_node(node[:object])}." : ""
         args = node[:args]
@@ -92,10 +89,31 @@ module Hrb
                else
                  nil
                end
-        src.write_ln "#{obj}#{node[:name]}#{args}"
+        block = node[:block] ? " #{visit_node(node[:block])}" : nil
+        src.write_ln "#{obj}#{node[:name]}#{args}#{block}"
+
+      when "Block"
+
+        src.write "{ |#{node[:args].map { |a| visit_node a }.join(", ")}|\n"
+
+        indented(src) { src.write visit_node(node[:body]) }
+
+        src.write_ln "}"
+
+      when "RangeLiteral"
+        dots = node[:exclusive] ? "..." : ".."
+
+        # parentheses help the compatibility with precendence of operators in some situations
+        # eg. (1..3).cover? 2 vs. 1..3.cover? 2
+        src.write "(", visit_node(node[:from]), dots, visit_node(node[:to]), ")"
+
       when "LiteralNode"
 
         src.write node[:value]
+
+      when "ArrayLiteral"
+
+        src.write("[", *node[:elements].map { |e| visit_node e }.join(", "), "]")
 
       when "StringInterpolation"
 
@@ -127,10 +145,9 @@ module Hrb
 
       when "EmptyNode"
         # pass
-        src = ""
       when "Arg"
 
-        src.write node[:name]
+        src.write node[:external_name]
 
       when "UnaryExpr"
 
@@ -147,30 +164,17 @@ module Hrb
       when "Enum"
         src.write_ln "module #{node[:name]}"
         node[:members].each_with_index do |m, i|
-          increment_indent
-
-          src.write_ln(visit_node(m) + (!m[:value] ? " = #{i}" : ""))
-
-          decrement_indent
+          indented(src) { src.write_ln(visit_node(m) + (!m[:value] ? " = #{i}" : "")) }
         end
         src.write_ln "end"
       when "If"
         src.write_ln "(if #{visit_node(node[:condition]).strip}"
 
-        increment_indent
-
-        src.write_ln visit_node(node[:then])
-
-        decrement_indent
+        indented(src) { src.write_ln visit_node(node[:then]) }
 
         if node[:else]
           src.write_ln "else"
-
-          increment_indent
-
-          src.write_ln visit_node(node[:else])
-
-          decrement_indent
+          indented(src) { src.write_ln visit_node(node[:else]) }
         end
 
         src.write_ln "end)"
@@ -180,15 +184,37 @@ module Hrb
       when "Case"
         src.write "case"
         src.write " #{visit_node(node[:condition]).strip}\n" if node[:condition]
-        increment_indent
-        node[:whens].each do |w|
-          src.write_ln visit_node(w)
+        indented(src) do
+          node[:whens].each do |w|
+            src.write_ln visit_node(w)
+          end
         end
-        decrement_indent
         src.write_ln "end"
       when "When"
         src.write_ln "when #{node[:conditions].map { |n| visit_node(n) }.join(", ")}"
-        src.write_ln visit_node(node[:body])
+
+        indented(src) { src.write_ln visit_node(node[:body]) }
+      when "MacroFor"
+        vars, expr, body = node[:vars], node[:expr], node[:body]
+        var_names = vars.map { |v| visit_node v }
+        @inside_macro = true
+        expanded = eval(<<~HRB).flatten
+          #{visit_node(expr)}.map do |*args|
+            locals = Hash[["#{var_names.join(%{", "})}"].zip(args)]
+            locals.merge!(scope) if @inside_macro
+            evaluate_macro_body(src, body, locals)
+          end
+        HRB
+        src.write(*expanded)
+        @inside_macro = false
+      when "MacroLiteral"
+        src.write node[:value]
+      when "MacroExpression"
+        if node[:output]
+          expr = visit_node node[:expr], scope
+          val = scope.fetch(expr) { raise "Undefined expression in macro scope: #{expr}" }
+          src.write val
+        end
       else
         raise "Not implemented: #{node[:type]}"
       end
@@ -196,12 +222,26 @@ module Hrb
       src
     end
 
-    def increment_indent
-      @indent_level += 1
+    private
+
+    def evaluate_macro_body(src, body, locals)
+      src.write visit_node(body, locals)
     end
 
-    def decrement_indent
+    def indented(src)
+      increment_indent(src)
+      yield
+      decrement_indent(src)
+    end
+
+    def increment_indent(src)
+      @indent_level += 1
+      src.increment_indent
+    end
+
+    def decrement_indent(src)
       @indent_level -= 1
+      src.decrement_indent
     end
   end
 end
