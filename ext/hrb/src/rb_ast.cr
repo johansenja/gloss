@@ -384,6 +384,9 @@ module Rb
       delegate :to_json, to: @info
     end
 
+    class MacroIf < Conditional
+    end
+
     class MacroLiteral < NodeWithValue
     end
 

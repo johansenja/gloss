@@ -1,6 +1,7 @@
 require "./lib/cr_ruby"
 require "./cr_ast"
 require "./rb_ast"
+require "./parser"
 
 # fun pb = parse_buffer(buffer : UInt8*)
 #   tree = Crystal::Parser.parse(String.new(buffer))
@@ -26,7 +27,7 @@ end
 
 def parse_buffer(buffer : String)
   begin
-    tree = Crystal::Parser.parse buffer
+    tree = Hrb::Parser.parse buffer
     tree.to_rb.to_json
   rescue e
     STDERR.puts e.message
