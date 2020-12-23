@@ -4,6 +4,7 @@ require "hrb/version"
 require "hrb.bundle"
 require "json"
 require "fast_blank"
+require "typeprof"
 
 class Source < String
   def initialize(indent_level)
@@ -34,6 +35,12 @@ class Source < String
   end
 end
 
+class Scope < Hash
+  def [](k)
+    fetch(k) { raise "Undefined expression for current scope: #{k}" }
+  end
+end
+
 module Hrb
   class Program
     attr_reader :tree
@@ -41,19 +48,70 @@ module Hrb
     def initialize(str)
       @indent_level = 0
       @inside_macro = false
+      @eval_vars = false
       tree_json = Hrb.parse_buffer str
       if tree_json
         @tree = JSON.parse tree_json, symbolize_names: true
       else
         abort
       end
+      @type_defs = {
+        classes: {
+          ["Logger"] => {
+            type_params: nil,
+            superclass: [],
+            members: {
+              modules: {include: [], extend: [], prepend: []},
+              methods: {},
+              attr_methods: {},
+              ivars: {},
+              cvars: {},
+              rbs_sources: {},
+            }
+          }
+        },
+        constants: {},
+        globals: {},
+      }
     end
 
     def output
-      puts visit_node(@tree)
+      rb_output = visit_node(@tree)
+      profile_types rb_output
+      rb_output
     end
 
-    def visit_node(node, scope = {})
+    def profile_types(rb_output)
+      # TypeProf does something similar - a little weird
+      TypeProf.const_set("Config", TypeProf::ConfigData.new(rb_files: [[rb_output, "hrb"]], verbose: 1))
+      scratch = TypeProf::Scratch.new
+      TypeProf::Builtin.setup_initial_global_env(scratch)
+      TypeProf::Import.new(scratch, @type_defs).import(true)
+
+      prologue_ctx = TypeProf::Context.new(nil, nil, nil)
+      prologue_ep = TypeProf::ExecutionPoint.new(prologue_ctx, -1, nil)
+      prologue_env = TypeProf::Env.new(
+        TypeProf::StaticEnv.new(TypeProf::Type.bot, TypeProf::Type.nil, false, true),
+        [],
+        [],
+        TypeProf::Utils::HashWrapper.new({})
+      )
+      TypeProf::Config.rb_files.each do |rb|
+        iseq = TypeProf::ISeq.compile_str(*rb)
+        ep, env = TypeProf.starting_state(iseq)
+        scratch.merge_env(ep, env)
+        scratch.add_callsite!(ep.ctx, prologue_ep, prologue_env) { |_ty, _ep| }
+      end
+
+      begin
+        result = scratch.type_profile
+        scratch.report(result, STDOUT)
+      rescue TypeProf::TypeProfError => e
+        e.report($stdout)
+      end
+    end
+
+    def visit_node(node, scope = Scope.new)
       src = Source.new(@indent_level)
       case node[:type]
       when "ClassNode"
@@ -65,6 +123,18 @@ module Hrb
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
+        @type_defs[:classes][class_name.split("::")] = {
+          type_params: nil, # for now
+          superclass: [superclass, []], # [] = type args
+          members: {
+            modules: { include: [], extend: [], prepend: [] },
+            methods: {},
+            attr_methods: {},
+            ivars: {},
+            cvars: {},
+            rbs_sources: {}, # a formality
+          },
+        }
       when "ModuleNode"
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
@@ -80,12 +150,12 @@ module Hrb
 
         src.write_ln "end"
       when "CollectionNode"
-        src.write_ln(*node[:children].map { |a| visit_node(a, scope) })
+        src.write(*node[:children].map { |a| visit_node(a, scope) })
       when "Call"
-        obj = node[:object] ? "#{visit_node(node[:object])}." : ""
+        obj = node[:object] ? "#{visit_node(node[:object], scope)}." : ""
         args = node[:args]
         args = if args && !args.empty?
-                 "(#{node[:args].map { |a| visit_node(a).strip }.reject(&:blank?).join(", ")})"
+                 "(#{node[:args].map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")})"
                else
                  nil
                end
@@ -139,12 +209,18 @@ module Hrb
 
         src.write_ln "#{visit_node(node[:target])} #{node[:op]}= #{visit_node(node[:value]).strip}"
 
-      when "Var", "InstanceVar"
+      when "Var"
+
+        if @eval_vars
+          src.write scope[node[:name]]
+        else
+          src.write node[:name]
+        end
+
+      when "InstanceVar"
 
         src.write node[:name]
 
-      when "EmptyNode"
-        # pass
       when "Arg"
 
         src.write node[:external_name]
@@ -178,9 +254,6 @@ module Hrb
         end
 
         src.write_ln "end)"
-      when "TypeDeclaration"
-        # pass for now
-        src = ""
       when "Case"
         src.write "case"
         src.write " #{visit_node(node[:condition]).strip}\n" if node[:condition]
@@ -212,9 +285,19 @@ module Hrb
       when "MacroExpression"
         if node[:output]
           expr = visit_node node[:expr], scope
-          val = scope.fetch(expr) { raise "Undefined expression in macro scope: #{expr}" }
+          val = scope[expr]
           src.write val
         end
+      when "MacroIf"
+        if evaluate_macro_condition(node[:condition], scope)
+          src.write_ln visit_node(node[:then], scope) if node[:then]
+        else
+          src.write_ln visit_node(node[:else], scope) if node[:else]
+        end
+      when "EmptyNode"
+        # pass
+      when "TypeDeclaration"
+        # pass for now
       else
         raise "Not implemented: #{node[:type]}"
       end
@@ -223,6 +306,12 @@ module Hrb
     end
 
     private
+
+    def evaluate_macro_condition(condition_node, scope)
+      @eval_vars = true
+      eval(visit_node(condition_node, scope))
+      @eval_vars = false
+    end
 
     def evaluate_macro_body(src, body, locals)
       src.write visit_node(body, locals)
