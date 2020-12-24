@@ -1,5 +1,4 @@
-require 'bundler'
-Bundler.setup
+require 'bundler/setup'
 
 require 'rake'
 require 'rake/extensiontask'
@@ -18,4 +17,4 @@ RSpec::Core::RakeTask.new :spec  do |spec|
   spec.pattern = 'spec/**/*_spec.rb'
 end
 
-task :default => [:compile, :spec]
+task :default => [:spec]

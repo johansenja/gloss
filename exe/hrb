@@ -9,4 +9,4 @@ raise "no path specified" unless pn
 
 content = File.read(pn)
 
-Hrb::Program.new(content).output
+puts Hrb::Program.new(content).output

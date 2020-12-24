@@ -128,11 +128,26 @@ module Rb
       delegate :to_json, to: @info
     end
 
-    class LiteralNode < NodeWithValue
-      def initialize(@value, @rb_type : RbLiteral)
+    class LiteralNode < Node
+      @info : NamedTuple(type: String, value: String | Int32 | Bool | Nil, rb_type: String)
+
+      def initialize(value, rb_type : RbLiteral)
+        val = case rb_type
+              when Rb::AST::RbLiteral::TrueClass
+                true
+              when Rb::AST::RbLiteral::FalseClass
+                false
+              when Rb::AST::RbLiteral::NilClass
+                nil
+              when Rb::AST::RbLiteral::Symbol
+                ":#{value}"
+              else
+                value
+              end
         @info = {
-          type:  self.class.name.split("::").last,
-          value: value,
+          type:    self.class.name.split("::").last,
+          value:   value,
+          rb_type: rb_type.inspect,
         }
       end
 
@@ -144,7 +159,7 @@ module Rb
 
       def initialize(elems)
         @info = {
-          type:  self.class.name.split("::").last,
+          type:     self.class.name.split("::").last,
           elements: elems,
         }
       end
@@ -395,8 +410,8 @@ module Rb
 
       def initialize(expr, output)
         @info = {
-          type: self.class.name.split("::").last,
-          expr: expr,
+          type:   self.class.name.split("::").last,
+          expr:   expr,
           output: output,
         }
       end

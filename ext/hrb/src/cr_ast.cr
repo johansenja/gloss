@@ -37,7 +37,7 @@ module Crystal
 
   class NumberLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(@value.inspect, Rb::AST::RbLiteral::Integer)
+      Rb::AST::LiteralNode.new(@value, Rb::AST::RbLiteral::Integer)
     end
   end
 
@@ -61,7 +61,7 @@ module Crystal
 
   class SymbolLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(":#{@value.inspect}", Rb::AST::RbLiteral::Symbol)
+      Rb::AST::LiteralNode.new(@value.to_s, Rb::AST::RbLiteral::Symbol)
     end
   end
 

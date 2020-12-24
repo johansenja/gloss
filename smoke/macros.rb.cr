@@ -1,10 +1,10 @@
-{% for controller_name in %w[Recipes Ingredients Chefs] %}
+{% for controller_name in %w[Recipes Ingredients] %}
   class {{controller_name}}Controller < BaseController
-    {% for method_name in %w[get show new create edit update destroy] %}
+    {% for method_name in %w[index new create update destroy] %}
       def {{method_name}}
-        {% if method_name == "create" %}
+        {% if "{{method_name}}" == "create" %}
           status = 201
-        {% elsif method_name == "destroy" %}
+        {% elsif "{{method_name}}" == "destroy" %}
           status = 204
         {% else %}
           status = 200

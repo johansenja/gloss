@@ -4,7 +4,9 @@ require "hrb/version"
 require "hrb.bundle"
 require "json"
 require "fast_blank"
-require "typeprof"
+require "rbs"
+require "steep"
+require "pry-byebug"
 
 class Source < String
   def initialize(indent_level)
@@ -55,60 +57,34 @@ module Hrb
       else
         abort
       end
-      @type_defs = {
-        classes: {
-          ["Logger"] => {
-            type_params: nil,
-            superclass: [],
-            members: {
-              modules: {include: [], extend: [], prepend: []},
-              methods: {},
-              attr_methods: {},
-              ivars: {},
-              cvars: {},
-              rbs_sources: {},
-            }
-          }
-        },
-        constants: {},
-        globals: {},
-      }
+      env_loader = RBS::EnvironmentLoader.new
+      @type_env = RBS::Environment.from_loader(env_loader).resolve_type_names
+      @current_scope = nil
+      @steep_target = Steep::Project::Target.new(name: "hrb", options: Steep::Project::Options.new, source_patterns: ["hrb"], ignore_patterns: [], signature_patterns: [])
     end
 
     def output
       rb_output = visit_node(@tree)
-      profile_types rb_output
+
+      unless check_types(rb_output)
+        raise "Type error: #{@steep_target.errors}"
+      end
+
       rb_output
     end
 
-    def profile_types(rb_output)
-      # TypeProf does something similar - a little weird
-      TypeProf.const_set("Config", TypeProf::ConfigData.new(rb_files: [[rb_output, "hrb"]], verbose: 1))
-      scratch = TypeProf::Scratch.new
-      TypeProf::Builtin.setup_initial_global_env(scratch)
-      TypeProf::Import.new(scratch, @type_defs).import(true)
+    def check_types(rb_str)
+      @type_env = @type_env.resolve_type_names
+      @steep_target.instance_variable_set("@environment", @type_envs)
+      @steep_target.add_source("hrb", rb_str)
+      definition_builder = RBS::DefinitionBuilder.new(env: @type_env)
+      factory = Steep::AST::Types::Factory.new(builder: definition_builder)
+      check = Steep::Subtyping::Check.new(factory: factory)
+      @steep_target.run_type_check(@type_env, check, Time.now)
 
-      prologue_ctx = TypeProf::Context.new(nil, nil, nil)
-      prologue_ep = TypeProf::ExecutionPoint.new(prologue_ctx, -1, nil)
-      prologue_env = TypeProf::Env.new(
-        TypeProf::StaticEnv.new(TypeProf::Type.bot, TypeProf::Type.nil, false, true),
-        [],
-        [],
-        TypeProf::Utils::HashWrapper.new({})
-      )
-      TypeProf::Config.rb_files.each do |rb|
-        iseq = TypeProf::ISeq.compile_str(*rb)
-        ep, env = TypeProf.starting_state(iseq)
-        scratch.merge_env(ep, env)
-        scratch.add_callsite!(ep.ctx, prologue_ep, prologue_env) { |_ty, _ep| }
-      end
-
-      begin
-        result = scratch.type_profile
-        scratch.report(result, STDOUT)
-      rescue TypeProf::TypeProfError => e
-        e.report($stdout)
-      end
+      @steep_target.status.is_a?(Steep::Project::Target::TypeCheckStatus) &&
+        @steep_target.no_error? &&
+        @steep_target.errors.empty?
     end
 
     def visit_node(node, scope = Scope.new)
@@ -116,35 +92,108 @@ module Hrb
       case node[:type]
       when "ClassNode"
         class_name = visit_node(node[:name])
-        superclass = node[:superclass] ? visit_node(node[:superclass]) : nil
+        superclass = if node[:superclass]
+                       @eval_vars = true
+                       visit_node(node[:superclass])
+                       @eval_vars = false
+                     else
+                       nil
+                     end
 
         src.write_ln "class #{class_name}#{" < #{superclass}" if superclass}"
+
+        current_namespace = RBS::Namespace.root # RBS::Namespace.new(path: [], absolute: false)
+        class_type = RBS::AST::Declarations::Class.new(
+          name: RBS::TypeName.new(
+            namespace: current_namespace,
+            name: class_name.to_sym
+          ),
+          type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
+          super_class: superclass ? RBS::AST::Declarations::Class::Super.new(name: RBS::Typename.new(name: super_class.to_sym, namespace: RBS::Namespace.root), args: [], location: nil) : nil,
+          members: [],
+          annotations: [],
+          location: node[:location],
+          comment: node[:comment]
+        )
+        parent_scope = @current_scope
+        @current_scope = class_type
 
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
-        @type_defs[:classes][class_name.split("::")] = {
-          type_params: nil, # for now
-          superclass: [superclass, []], # [] = type args
-          members: {
-            modules: { include: [], extend: [], prepend: [] },
-            methods: {},
-            attr_methods: {},
-            ivars: {},
-            cvars: {},
-            rbs_sources: {}, # a formality
-          },
-        }
+
+        @current_scope = parent_scope
+        @type_env.insert_decl class_type, outer: [], namespace: current_namespace
       when "ModuleNode"
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
 
+        current_namespace = RBS::Namespace.root # RBS::Namespace.new(path: [module_name.to_sym], absolute: false)
+
+        module_type = RBS::AST::Declarations::Module.new(
+          name: RBS::TypeName.new(
+            namespace: current_namespace,
+            name: module_name.to_sym
+          ),
+          type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
+          self_types: [],
+          members: [],
+          annotations: [],
+          location: node[:location],
+          comment: node[:comment]
+        )
+        parent_scope = @current_scope
+        @current_scope = module_type
+
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
+        @current_scope = parent_scope
+        @type_env.insert_decl module_type, namespace: current_namespace, outer: []
         src.write_ln "end"
       when "DefNode"
         args = node[:args].empty? ? nil : "(#{node[:args].map { |a| visit_node(a) }.join(", ")})"
         src.write_ln "def #{node[:name]}#{args}"
+
+        return_type = RBS::Types::ClassSingleton.new(
+          name: RBS::TypeName.new(
+            name: eval(visit_node(node[:return_type])).to_s.to_sym,
+            namespace: RBS::Namespace.root
+          ),
+          location: nil
+        )
+
+        method_types = [
+          RBS::MethodType.new(
+            type_params: [],
+            type: RBS::Types::Function.new(
+              required_positionals: [],
+              optional_positionals: [],
+              rest_positionals: nil,
+              trailing_positionals: [],
+              required_keywords: {},
+              optional_keywords: {},
+              rest_keywords: nil,
+              return_type: return_type
+            ),
+            block: nil,
+            location: nil
+          )
+        ]
+        method_definition = RBS::AST::Members::MethodDefinition.new(
+          name: node[:name].to_sym,
+          kind: :instance,
+          types: method_types,
+          annotations: [],
+          location: node[:location],
+          comment: node[:comment],
+          overload: false
+        )
+
+        if @current_scope
+          @current_scope.members << method_definition
+        else
+          @type_env << method_definition # should be new class declaration for Object with method_definition as private method
+        end
 
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
