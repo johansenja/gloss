@@ -61,7 +61,7 @@ module Crystal
 
   class SymbolLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(@value.to_s, Rb::AST::RbLiteral::Symbol)
+      Rb::AST::LiteralNode.new(":#{@value.to_s}", Rb::AST::RbLiteral::Symbol)
     end
   end
 
@@ -104,7 +104,7 @@ module Crystal
   class Def < ASTNode
     def to_rb
       Rb::AST::DefNode.new(@name, @args.map(&.to_rb), @body.to_rb, receiver.try(&.to_rb),
-        return_type.try(&.to_rb))
+                           return_type.try(&.to_rb), @double_splat.try(&.to_rb))
     end
   end
 
@@ -338,7 +338,7 @@ module Crystal
   {% for class_name in %w[Return Break Next] %}
     class {{class_name.id}} < ControlExpression
       def to_rb
-        Rb::AST::EmptyNode.new(self.class.name)
+        Rb::AST::{{class_name.id}}.new(@exp.try(&.to_rb))
       end
     end
   {% end %}

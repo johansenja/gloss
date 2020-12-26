@@ -94,17 +94,18 @@ module Rb
     end
 
     class DefNode < Node
-      @info : NamedTuple(type: String, name: String, body: Node, args: Array(Arg), receiver: Node?,
-        return_type: Node?)
+      @info : NamedTuple(type: String, name: String, body: Node, rp_args: Array(Arg), receiver: Node?,
+        return_type: Node?, rest_kw_args: Arg?)
 
-      def initialize(name : String, args : Array(Arg), body : Node, receiver : Node?, return_type : Node?)
+      def initialize(name : String, rp_args : Array(Arg), body : Node, receiver : Node?, return_type : Node?, rest_kw_args)
         @info = {
-          type:        self.class.name.split("::").last,
-          name:        name,
-          body:        body,
-          args:        args,
-          receiver:    receiver,
-          return_type: return_type,
+          type:         self.class.name.split("::").last,
+          name:         name,
+          body:         body,
+          rp_args:      rp_args,
+          rest_kw_args: rest_kw_args,
+          receiver:     receiver,
+          return_type:  return_type,
         }
       end
 
@@ -417,6 +418,28 @@ module Rb
       end
 
       delegate :to_json, to: @info
+    end
+
+    class ControlExpression < Node
+      @info : NamedTuple(type: String, value: Node?)
+
+      def initialize(value)
+        @info = {
+          type:  self.class.name.split("::").last,
+          value: value,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class Return < ControlExpression
+    end
+
+    class Break < ControlExpression
+    end
+
+    class Next < ControlExpression
     end
   end
 end

@@ -1,7 +1,13 @@
 class MyClass
-  def sum : Integer
+  def int : Integer
     "abc"
+  end
+
+  def sym : Symbol
+    :abc
   end
 end
 
-"sym" + MyClass.new.sum
+mc = MyClass.new
+
+5 + mc.sym + mc.int

@@ -1,3 +1,7 @@
+class BaseController
+  def render(**args); end
+end
+
 {% for controller_name in %w[Recipes Ingredients] %}
   class {{controller_name}}Controller < BaseController
     {% for method_name in %w[index new create update destroy] %}

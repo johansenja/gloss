@@ -7,6 +7,7 @@ require "fast_blank"
 require "rbs"
 require "steep"
 require "pry-byebug"
+require_relative "hrb/errors"
 
 class Source < String
   def initialize(indent_level)
@@ -43,6 +44,9 @@ class Scope < Hash
   end
 end
 
+EMPTY_ARRAY = [].freeze
+EMPTY_HASH = {}.freeze
+
 module Hrb
   class Program
     attr_reader :tree
@@ -57,30 +61,63 @@ module Hrb
       else
         abort
       end
-      env_loader = RBS::EnvironmentLoader.new
-      @type_env = RBS::Environment.from_loader(env_loader).resolve_type_names
       @current_scope = nil
-      @steep_target = Steep::Project::Target.new(name: "hrb", options: Steep::Project::Options.new, source_patterns: ["hrb"], ignore_patterns: [], signature_patterns: [])
+      #Steep.logger.level = Logger::DEBUG
+      @steep_target = Steep::Project::Target.new(
+        name: "hrb",
+        options: Steep::Project::Options.new,
+        source_patterns: ["hrb"],
+        ignore_patterns: [],
+        signature_patterns: []
+      )
+      @top_level_decls = {}
     end
 
     def output
       rb_output = visit_node(@tree)
 
       unless check_types(rb_output)
-        raise "Type error: #{@steep_target.errors}"
+        raise Errors::TypeError,
+              @steep_target.errors.map { |e|
+                case e
+                when Steep::Errors::NoMethod
+                  "Unknown method :#{e.method}, location: #{e.type.location.inspect}"
+                when Steep::Errors::MethodBodyTypeMismatch
+                  "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
+                when Steep::Errors::IncompatibleArguments
+                  "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
+                when Steep::Errors::ReturnTypeMismatch
+                  "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
+                else
+                  e.inspect
+                end
+              }.join("\n")
       end
 
       rb_output
     end
 
     def check_types(rb_str)
-      @type_env = @type_env.resolve_type_names
-      @steep_target.instance_variable_set("@environment", @type_envs)
+      env_loader = RBS::EnvironmentLoader.new
+      env = RBS::Environment.from_loader(env_loader)
+
+      @top_level_decls.each do |_, decl|
+        env << decl
+      end
+      env = env.resolve_type_names
+
+      @steep_target.instance_variable_set("@environment", env)
       @steep_target.add_source("hrb", rb_str)
-      definition_builder = RBS::DefinitionBuilder.new(env: @type_env)
+
+      definition_builder = RBS::DefinitionBuilder.new(env: env)
       factory = Steep::AST::Types::Factory.new(builder: definition_builder)
       check = Steep::Subtyping::Check.new(factory: factory)
-      @steep_target.run_type_check(@type_env, check, Time.now)
+      validator = Steep::Signature::Validator.new(checker: check)
+      validator.validate
+
+      raise Errors::TypeValidationError, validator.each_error.to_a.join("\n") unless validator.no_error?
+
+      @steep_target.run_type_check(env, check, Time.now)
 
       @steep_target.status.is_a?(Steep::Project::Target::TypeCheckStatus) &&
         @steep_target.no_error? &&
@@ -102,7 +139,7 @@ module Hrb
 
         src.write_ln "class #{class_name}#{" < #{superclass}" if superclass}"
 
-        current_namespace = RBS::Namespace.root # RBS::Namespace.new(path: [], absolute: false)
+        current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
         class_type = RBS::AST::Declarations::Class.new(
           name: RBS::TypeName.new(
             namespace: current_namespace,
@@ -115,15 +152,15 @@ module Hrb
           location: node[:location],
           comment: node[:comment]
         )
-        parent_scope = @current_scope
+        old_parent_scope = @current_scope
         @current_scope = class_type
 
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
 
-        @current_scope = parent_scope
-        @type_env.insert_decl class_type, outer: [], namespace: current_namespace
+        @current_scope = old_parent_scope
+        @top_level_decls[class_type.name.name] = class_type unless @current_scope
       when "ModuleNode"
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
@@ -142,25 +179,30 @@ module Hrb
           location: node[:location],
           comment: node[:comment]
         )
-        parent_scope = @current_scope
+        old_parent_scope = @current_scope
         @current_scope = module_type
 
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
-        @current_scope = parent_scope
-        @type_env.insert_decl module_type, namespace: current_namespace, outer: []
+        @current_scope = old_parent_scope
+        @top_level_decls[module_type.name.name] = module_type unless @current_scope
         src.write_ln "end"
       when "DefNode"
-        args = node[:args].empty? ? nil : "(#{node[:args].map { |a| visit_node(a) }.join(", ")})"
+        args = render_args(node)
         src.write_ln "def #{node[:name]}#{args}"
 
-        return_type = RBS::Types::ClassSingleton.new(
-          name: RBS::TypeName.new(
-            name: eval(visit_node(node[:return_type])).to_s.to_sym,
-            namespace: RBS::Namespace.root
-          ),
-          location: nil
-        )
+        return_type = if node[:return_type]
+                        RBS::Types::ClassInstance.new(
+                          name: RBS::TypeName.new(
+                            name: eval(visit_node(node[:return_type])).to_s.to_sym,
+                            namespace: RBS::Namespace.root
+                          ),
+                          args: [],
+                          location: nil
+                        )
+                      else
+                        RBS::Types::Bases::Any.new(location: nil)
+                      end
 
         method_types = [
           RBS::MethodType.new(
@@ -172,7 +214,11 @@ module Hrb
               trailing_positionals: [],
               required_keywords: {},
               optional_keywords: {},
-              rest_keywords: nil,
+              rest_keywords: node[:rest_kw_args] ?
+                RBS::Types::Function::Param.new(
+                  name: visit_node(node[:rest_kw_args]).to_sym,
+                  type: RBS::Types::Bases::Any.new(location: nil)
+                ) : nil,
               return_type: return_type
             ),
             block: nil,
@@ -213,7 +259,7 @@ module Hrb
 
       when "Block"
 
-        src.write "{ |#{node[:args].map { |a| visit_node a }.join(", ")}|\n"
+        src.write "{ |#{node[:rp_args].map { |a| visit_node a }.join(", ")}|\n"
 
         indented(src) { src.write visit_node(node[:body]) }
 
@@ -320,13 +366,14 @@ module Hrb
         vars, expr, body = node[:vars], node[:expr], node[:body]
         var_names = vars.map { |v| visit_node v }
         @inside_macro = true
-        expanded = eval(<<~HRB).flatten
-          #{visit_node(expr)}.map do |*args|
-            locals = Hash[["#{var_names.join(%{", "})}"].zip(args)]
-            locals.merge!(scope) if @inside_macro
-            evaluate_macro_body(src, body, locals)
-          end
-        HRB
+        indent_level = @indent_level
+        @indent_level -= 1 unless indent_level.zero?
+        expanded = eval(visit_node(expr)).map do |*a|
+          locals = Hash[[var_names.join(%(", "))].zip(a)]
+          locals.merge!(scope) if @inside_macro
+          visit_node(body, locals)
+        end.flatten
+        @indent_level += 1 unless indent_level.zero?
         src.write(*expanded)
         @inside_macro = false
       when "MacroLiteral"
@@ -343,6 +390,9 @@ module Hrb
         else
           src.write_ln visit_node(node[:else], scope) if node[:else]
         end
+      when "Return"
+        val = node[:value] ? " #{visit_node(node[:value]).strip}" : nil
+        src.write "return#{val}"
       when "EmptyNode"
         # pass
       when "TypeDeclaration"
@@ -362,10 +412,6 @@ module Hrb
       @eval_vars = false
     end
 
-    def evaluate_macro_body(src, body, locals)
-      src.write visit_node(body, locals)
-    end
-
     def indented(src)
       increment_indent(src)
       yield
@@ -380,6 +426,26 @@ module Hrb
     def decrement_indent(src)
       @indent_level -= 1
       src.decrement_indent
+    end
+
+    def render_args(node)
+      rp = node[:rp_args] || EMPTY_ARRAY
+      op = node[:op_args] || EMPTY_ARRAY
+      rkw = node[:req_kw_args] || EMPTY_HASH
+      okw = node[:opt_kw_args] || EMPTY_HASH
+      rest_p = node[:rest_p_args]
+      rest_kw = node[:rest_kw_args]
+      return nil unless [rp, op, rkw, okw, rest_p, rest_kw].any? { |a| !a.nil? || !a.empty? }
+
+      contents = [
+        rp.map { |a| visit_node(a) },
+        op.map { |pos| "#{pos.name} = #{value}" },
+        rkw.map { |name, _| "#{name}:" },
+        okw.map { |name, _| "#{name}: #{value}" },
+        rest_p ? "*#{rest_p}" : "",
+        rest_kw ? "**#{visit_node(rest_kw)}" : ""
+      ].reject(&:empty?).flatten.join(", ")
+      "(#{contents})"
     end
   end
 end
