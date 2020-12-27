@@ -1,12 +1,152 @@
-# Crystal Gem Template
+# Hrb
 
-A working* demo Ruby gem, written in Crystal.
+Hrb is a high-level programming language which compiles to ruby; its aims are on transparency,
+efficiency, to enhance ruby's goal of developer happiness and productivity. Some of the features include:
+
+- Type checking, via optional type annotations
+- Compile-time macros
+- Stripping out unused classes, modules and methods at compile time to lead to slimmer projects
+- All pre-ruby 3.0 files are valid hrb files
+- Other syntactic sugar
+
+
+## Example:
+
+```crystal
+# src/lib/http_client.hrb
+
+class HttpClient
+
+  @base_url : String
+
+  def initialize(@base_url); end
+
+  {% for verb in %w[get post put patch delete] %}
+    def {{verb}}(path : String, headers : Hash[untyped, untyped]?, body : Hash[untyped, untyped]?)
+      {% if verb == "get" %}
+        warn "ignoring body #{body} for get request" unless body.nil?
+        # business logic
+      {% elsif %w[post patch put].include? verb %}
+        body : String = body.to_json
+        # business logic
+      {% else %}
+        # delete request business logic
+      {% end %}
+    end
+  {% end %}
+end
+```
+
+compiles to:
+
+```ruby
+# lib/http_client.rb
+# frozen_string_literal: true
+
+class HttpClient
+  # @type ivar base_url: String
+
+  def initialize(base_url)
+    @base_url = base_url
+  end
+
+  def get(path, headers, body)
+    warn "ignoring body #{body} for get request" unless body.nil?
+    # business logic
+  end
+
+  def post(path, headers, body)
+    # @type var body: String
+    body = body.to_json
+    # business logic
+  end
+
+  def put(path, headers, body)
+    # @type var body: String
+    body = body.to_json
+    # business logic
+  end
+
+  def patch(path, headers, body)
+    # @type var body: String
+    body = body.to_json
+    # business logic
+  end
+
+  def delete(path, headers, body)
+    # delete request business logic
+  end
+end
+```
+
+(with the assumption that all of the methods will be used within the rest of the app. Another
+example:
+
+```crystal
+module MyLib
+  module Utils
+    def abc
+      "abc"
+    end
+
+    def defg
+      "defg"
+    end
+
+    def hijk
+      "hijkl"
+    end
+  end
+
+  class Other
+    def foo
+    end
+  end
+end
+
+class Bar
+  include MyLib::Utils
+
+  def baz
+    abc
+  end
+end
+
+Bar.new.baz
+```
+
+will simplify to
+
+```ruby
+module MyLib
+  module Utils
+    def abc
+      "abc"
+    end
+  end
+end
+
+class Bar
+  include MyLib::Utils
+
+  def baz
+    abc
+  end
+end
+
+Bar.new.baz
+```
+
+Hrb aims to provide the necessary tooling to avoid dynamically defining or invoking methods, classes
+and modules, and to provide as much transparency and efficiency as possible in runtime code.
 
 ## Usage:
 
 ```ruby
 # Gemfile
-gem "crystal_gem_template", git: "https://github.com/johansenja/crystal_gem_template.git"
+group :development do
+  gem "hrb"
+end
 ```
 
 then
@@ -15,25 +155,14 @@ then
 
 then
 
-```ruby
-# app.rb
-require 'crystal_gem_template'
-
-include CrystalGemTemplate
-
-hello('world') # => "hello world"
-```
+`hrb init # create .hrb.yml config file`
 
 then
 
-`bundle exec ruby app.rb # => hello world`
+`hrb build`
 
-Not a lot going on here, clearly, but this opens the door for performant code written in Crystal, then used in Ruby apps, going via Ruby's C API.
+### Inspiration:
 
-## Example as a functional gem:
-
-[levenshtein_str](https://github.com/johansenja/levenshtein_str)
-
-<hr>
-
-\*note: tested and used on MacOS, so probably doesn't work on Linux! (yet)
+- Crystal (in a big way)
+- Ruby (obviously - but also recent tooling such as RBS and Steep)
+- TypeScript (to some degree)
