@@ -371,12 +371,14 @@ module Rb
     end
 
     class TypeDeclaration < Node
-      @info : NamedTuple(type: String, var: Node, declared_type: Node, value: Node?)
+      @info : NamedTuple(type: String, var: Node, declared_type: Node, value: Node?, var_type:
+      String)
 
       def initialize(@var : Node, @declared_type : Node, @value : Node?)
         @info = {
           type:          self.class.name.split("::").last,
           var:           @var,
+          var_type:      @var.class.name.split("::").last,
           declared_type: @declared_type,
           value:         @value,
         }

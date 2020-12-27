@@ -34,4 +34,23 @@ RSpec.describe Hrb::Program do
       MyClass.new.int.positive?
     HRB
   end
+
+  it "reports errors for invalid variables" do
+    expect { Hrb::Program.new(<<~HRB).output }.to raise_error(Hrb::Errors::TypeError)
+      str : Symbol = "abc"
+    HRB
+  end
+
+  it "does not report errors for valid variables" do
+    expect(Hrb::Program.new(<<~HRB).output)
+      str : String = "abc"
+    HRB
+  end
+
+  it "reports errors when changing a variable's type" do
+    expect { Hrb::Program.new(<<~HRB).output }.to raise_error(Hrb::Errors::TypeError)
+      str : String = "abc"
+      str = :abc
+    HRB
+  end
 end

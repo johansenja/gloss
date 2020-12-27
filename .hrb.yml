@@ -1,0 +1,2 @@
+src_dir: src
+freeze_string_literals: yes

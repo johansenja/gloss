@@ -1,4 +1,5 @@
 require "compiler/crystal/syntax/*"
+require "./lexer"
 
 module Hrb
   class Parser < Crystal::Parser

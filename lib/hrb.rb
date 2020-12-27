@@ -6,7 +6,6 @@ require "json"
 require "fast_blank"
 require "rbs"
 require "steep"
-require "pry-byebug"
 require_relative "hrb/errors"
 
 class Source < String
@@ -56,13 +55,12 @@ module Hrb
       @inside_macro = false
       @eval_vars = false
       tree_json = Hrb.parse_buffer str
-      if tree_json
+      begin
         @tree = JSON.parse tree_json, symbolize_names: true
-      else
-        abort
+      rescue JSON::ParserError
+        raise Errors::ParserError, tree_json
       end
       @current_scope = nil
-      #Steep.logger.level = Logger::DEBUG
       @steep_target = Steep::Project::Target.new(
         name: "hrb",
         options: Steep::Project::Options.new,
@@ -88,6 +86,8 @@ module Hrb
                   "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
                 when Steep::Errors::ReturnTypeMismatch
                   "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
+                when Steep::Errors::IncompatibleAssignment
+                  "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
                 else
                   e.inspect
                 end
@@ -396,7 +396,8 @@ module Hrb
       when "EmptyNode"
         # pass
       when "TypeDeclaration"
-        # pass for now
+        src.write_ln "# @type var #{visit_node(node[:var])}: #{visit_node(node[:declared_type])}"
+        src.write_ln "#{visit_node(node[:var])} = #{visit_node(node[:value])}"
       else
         raise "Not implemented: #{node[:type]}"
       end

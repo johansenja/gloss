@@ -30,7 +30,7 @@ def parse_buffer(buffer : String)
     tree = Hrb::Parser.parse buffer
     tree.to_rb.to_json
   rescue e
-    STDERR.puts e.message
+    e.message
   end
 end
 
