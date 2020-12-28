@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "optparse"
+
 module Hrb
   class CLI
     def initialize(argv)
@@ -16,7 +18,11 @@ module Hrb
 
         puts Program.new(content).output
       when "init"
-        Initializer.new
+        force = false
+        OptionParser.new do |opt|
+          opt.on("--force", "-f") { force = true }
+        end.parse!(@argv)
+        Initializer.new(force).run
       else
         abort "Hrb doesn't know how to #{command}"
       end

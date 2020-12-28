@@ -3,6 +3,7 @@ PATH
   specs:
     hrb (0.1.0)
       fast_blank
+      listen
       steep
 
 GEM

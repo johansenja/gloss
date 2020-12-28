@@ -1,2 +1,3 @@
+---
+frozen_string_literals: true
 src_dir: src
-freeze_string_literals: yes

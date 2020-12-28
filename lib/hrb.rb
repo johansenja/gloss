@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 require "hrb/version"
+require "hrb/cli"
+require "hrb/watcher"
+require "hrb/initializer"
+require "hrb/config"
 require "hrb.bundle"
 require "json"
 require "fast_blank"

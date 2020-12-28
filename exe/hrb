@@ -3,10 +3,4 @@
 require "bundler/setup"
 require "hrb"
 
-pn = ARGV[0]
-
-raise "no path specified" unless pn
-
-content = File.read(pn)
-
-puts Hrb::Program.new(content).output
+Hrb::CLI.new(ARGV).run
