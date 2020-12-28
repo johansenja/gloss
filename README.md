@@ -9,6 +9,7 @@ efficiency, to enhance ruby's goal of developer happiness and productivity. Some
 - All pre-ruby 3.0 files are valid hrb files
 - Other syntactic sugar
 
+For anyone familiar with Crystal, some of these feature should be fairly faimiliar.
 
 ## Example:
 
@@ -127,7 +128,7 @@ module MyLib
 end
 
 class Bar
-  include MyLib::Utils
+  include(MyLib::Utils)
 
   def baz
     abc
@@ -160,9 +161,3 @@ then
 then
 
 `hrb build`
-
-### Inspiration:
-
-- Crystal (in a big way)
-- Ruby (obviously - but also recent tooling such as RBS and Steep)
-- TypeScript (to some degree)
