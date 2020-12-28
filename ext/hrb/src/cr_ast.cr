@@ -145,6 +145,8 @@ module Crystal
   end
 
   class Arg < ASTNode
+    property keyword_arg : Bool = false
+
     def to_rb
       Rb::AST::Arg.new(@name, @external_name, @restriction.try(&.to_rb), @default_value.try(&.to_rb))
     end
@@ -343,9 +345,22 @@ module Crystal
     end
   {% end %}
 
+  class ExceptionHandler < ASTNode
+    def to_rb
+      Rb::AST::ExceptionHandler.new(@body.to_rb, @rescues.try(&.map(&.to_rb)), @else.try(&.to_rb),
+                                    @ensure.try(&.to_rb))
+    end
+  end
+
+  class Rescue < ASTNode
+    def to_rb
+      Rb::AST::Rescue.new(@body.to_rb, @types.try(&.map(&.to_rb)), @name)
+    end
+  end
+
   {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
                          Select ImplicitObj AnnotationDef While Until Generic UninitializedVar
-                         Rescue ExceptionHandler ProcLiteral ProcPointer Union Self Yield Include
+                         ProcLiteral ProcPointer Union Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
                          Metaclass Cast NilableCast TypeOf Annotation
                          Underscore MagicConstant Asm AsmOperand] %}

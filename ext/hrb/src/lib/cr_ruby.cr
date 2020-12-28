@@ -2,7 +2,7 @@ lib CrRuby
   # every ruby Object is a VALUE
   type VALUE = Void*
   # ruby method typing
-  type METHOD_FUNC = VALUE, VALUE -> VALUE | Nil
+  type METHOD_FUNC = VALUE, VALUE -> VALUE
 
   # a ruby Class is a VALUE
   $rb_cObject : VALUE

@@ -443,5 +443,37 @@ module Rb
 
     class Next < ControlExpression
     end
+
+    class ExceptionHandler < Node
+      @info : NamedTuple(type: String, body: Node, rescues: Array(Rescue)?, else: Node?,
+      ensure: Node?)
+
+      def initialize(body, rescues, else_node, ensure_node)
+        @info = {
+          type:  self.class.name.split("::").last,
+          body: body,
+          rescues: rescues,
+          else: else_node,
+          ensure: ensure_node
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class Rescue < Node
+      @info : NamedTuple(type: String, body: Node, types: Array(Node)?, name: String?)
+
+      def initialize(body, types, name)
+        @info = {
+          type:  self.class.name.split("::").last,
+          body: body,
+          types: types,
+          name: name,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
   end
 end

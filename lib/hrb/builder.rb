@@ -347,11 +347,29 @@ module Hrb
       when "Return"
         val = node[:value] ? " #{visit_node(node[:value]).strip}" : nil
         src.write "return#{val}"
-      when "EmptyNode"
-        # pass
       when "TypeDeclaration"
         src.write_ln "# @type var #{visit_node(node[:var])}: #{visit_node(node[:declared_type])}"
         src.write_ln "#{visit_node(node[:var])} = #{visit_node(node[:value])}"
+      when "ExceptionHandler"
+        src.write_ln "begin"
+        src.write_ln visit_node(node[:body])
+        if node[:rescues]
+          node[:rescues].each do |r|
+            src.write_ln "rescue #{r[:types].map { |n| visit_node n }.join(", ") if r[:types]}#{" => #{r[:name]}" if r[:name]}"
+            src.write_ln visit_node(r[:body]) if r[:body]
+          end
+        end
+        if node[:else]
+          src.write_ln "else"
+          src.write_ln visit_node(node[:else])
+        end
+        if node[:ensure]
+          src.write_ln "ensure"
+          src.write_ln visit_node(node[:ensure])
+        end
+        src.write_ln "end"
+      when "EmptyNode"
+        # pass
       else
         raise "Not implemented: #{node[:type]}"
       end

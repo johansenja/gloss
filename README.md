@@ -7,6 +7,8 @@ efficiency, to enhance ruby's goal of developer happiness and productivity. Some
 - Compile-time macros
 - Method overloading
 - Enums
+- abstract classes
+- Tuples and NamedTuples (think immutable arrays and hashes)
 - Stripping out unused classes, modules and methods at compile time to lead to slimmer projects
 - All pre-ruby 3.0 files are valid hrb files
 - Other syntactic sugar

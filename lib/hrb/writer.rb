@@ -1,14 +1,24 @@
 # frozen_string_literal: true
 
 module Hrb
+  module Utils
+    module_function
+
+    def src_path_to_output_path(src_path)
+      src_path.sub(%r{\A(?:\./)?#{Config.src_dir}/?}, "")
+    end
+  end
+
   class Writer
-    def initialize(content, src_path, run_path = nil)
+    include Utils
+
+    def initialize(content, src_path, output_path = nil)
       @content, @src_path = content, src_path
-      @run_path = run_path || src_path.sub(%r{\A(?:\./)?#{Config.src_dir}/?}, "")
+      @output_path = output_path || src_path_to_output_path(src_path)
     end
 
     def run
-      File.open(@run_path, "wb") do |file|
+      File.open(@out_path, "wb") do |file|
         file << content
       end
     end
