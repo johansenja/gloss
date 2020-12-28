@@ -4,8 +4,8 @@ require "listen"
 
 module Hrb
   class Watcher
-    def initialize(paths)
-      @paths = paths
+    def initialize
+      @paths = %w[src/]
     end
 
     def watch

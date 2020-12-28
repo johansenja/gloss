@@ -12,11 +12,12 @@ module Hrb
       command, *files = @argv
       case command
       when "watch"
-        Watcher.new(files.empty? ? [Config.src_dir] : files).watch
+        Watcher.new.watch
       when "build"
         content = File.read(files.first)
 
-        puts Program.new(content).output
+        Writer.new(Builder.new(content).run,
+                   files.first)
       when "init"
         force = false
         OptionParser.new do |opt|

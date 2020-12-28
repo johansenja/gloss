@@ -1,8 +1,8 @@
 require "hrb"
 
-RSpec.describe Hrb do
+RSpec.describe Hrb::Builder do
   it "expands macros" do
-    output = Hrb::Program.new(<<-HRB).output
+    output = Hrb::Builder.new(<<-HRB).run
 class BaseController
   def render(**args) end
 end
