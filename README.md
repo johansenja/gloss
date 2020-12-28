@@ -5,6 +5,8 @@ efficiency, to enhance ruby's goal of developer happiness and productivity. Some
 
 - Type checking, via optional type annotations
 - Compile-time macros
+- Method overloading
+- Enums
 - Stripping out unused classes, modules and methods at compile time to lead to slimmer projects
 - All pre-ruby 3.0 files are valid hrb files
 - Other syntactic sugar
