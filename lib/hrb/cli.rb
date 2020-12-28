@@ -12,7 +12,7 @@ module Hrb
       command, *files = @argv
       case command
       when "watch"
-        Watcher.new(files).watch
+        Watcher.new(files.empty? ? [Config.src_dir] : files).watch
       when "build"
         content = File.read(files.first)
 
@@ -21,7 +21,7 @@ module Hrb
         force = false
         OptionParser.new do |opt|
           opt.on("--force", "-f") { force = true }
-        end.parse!(@argv)
+        end.parse(@argv)
         Initializer.new(force).run
       else
         abort "Hrb doesn't know how to #{command}"
