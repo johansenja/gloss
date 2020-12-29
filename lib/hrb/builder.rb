@@ -353,11 +353,9 @@ module Hrb
       when "ExceptionHandler"
         src.write_ln "begin"
         src.write_ln visit_node(node[:body])
-        if node[:rescues]
-          node[:rescues].each do |r|
-            src.write_ln "rescue #{r[:types].map { |n| visit_node n }.join(", ") if r[:types]}#{" => #{r[:name]}" if r[:name]}"
-            src.write_ln visit_node(r[:body]) if r[:body]
-          end
+        node[:rescues]&.each do |r|
+          src.write_ln "rescue #{r[:types].map { |n| visit_node n }.join(", ") if r[:types]}#{" => #{r[:name]}" if r[:name]}"
+          src.write_ln visit_node(r[:body]) if r[:body]
         end
         if node[:else]
           src.write_ln "else"

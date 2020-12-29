@@ -154,14 +154,13 @@ module Hrb
 
       default_value = nil
       restriction = nil
-      keyword_argument = false
+      keyword_argument = @token.type == :":" && !found_space
 
       found_colon = false
 
+      next_token_skip_space
+
       if allow_restrictions && @token.type == :":"
-        if !default_value && !found_space
-          keyword_argument = true
-        end
 
         next_token_skip_space_or_newline
 

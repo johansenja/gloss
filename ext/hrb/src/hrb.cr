@@ -18,6 +18,7 @@ def parse_buffer(buffer : String)
     tree = Hrb::Parser.parse buffer
     tree.to_rb.to_json
   rescue e : Crystal::SyntaxException
+    pp e.backtrace
     e.to_s
   end
 end
