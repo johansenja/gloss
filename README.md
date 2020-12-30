@@ -1,21 +1,41 @@
 # Gloss
 
-Gloss is a high-level programming language which compiles to ruby; its aims are on transparency,
-efficiency, to enhance ruby's goal of developer happiness and productivity. It is hihgly inspired by
-Crystal; some of the features include:
+Gloss is a high-level programming language based on [Ruby](https://github.com/ruby/ruby) and [Crystal](https://github.com/crystal-lang/crystal), which compiles to ruby; its aims are on transparency,
+efficiency, and to enhance ruby's goal of developer happiness and productivity. Some of the features include:
 
 - Type checking, via optional type annotations
 - Compile-time macros
 - Enums
-- Tuples and NamedTuples (think immutable arrays and hashes)
-- All pre-ruby 3.0 files are valid gloss files
+- Tuples and Named Tuples
+- All ruby files are valid gloss files (a small exceptions for now; workarounds are mostly available)
 - Other syntactic sugar
 
 Coming soon:
-- Method overloading
 - abstract classes
 
-## Example:
+Maybe on the roadmap:
+- Method overloading
+
+## Examples:
+
+#### Type checking:
+
+```crystal
+class HelloWorld
+  def perform : String
+    str = "Hello world"
+    puts str
+    str
+  end
+end
+
+result : String = HelloWorld.perform # Error => No singleton method `perform` for HelloWorld
+result : Integer = HelloWorld.new.perform # Incompatible assignment => can't assign string to integer
+result : String = HelloWorld.new.perform # OK
+result.length # OK => 11
+```
+
+#### Macros:
 
 ```crystal
 # src/lib/http_client.gloss
@@ -81,6 +101,85 @@ class HttpClient
   def delete(path, headers, body)
     # delete request business logic
   end
+end
+```
+
+#### Enums:
+
+```crystal
+class Language
+  enum Lang
+    R = "Ruby"
+    C = "Crystal"
+    TS = "TypeScript"
+    P = "Python"
+  end
+  
+  def favourite_language(language : Lang)
+    puts "my favourite language is #{language}"
+  end
+end
+```
+
+#### Tuples + Named Tuples:
+
+Currently, named tuples can only have symbols as keys, and are distinguished from hashes by the use of the post ruby-1.9 syntax `key: value` (for named tuple) vs `:key => value` (for hash) - see example below. **This is liable to change to ensure maximum compatibility with existing ruby code**.
+
+```crystal
+tuple = {"hello", "world"}
+array = ["hello", "world"]
+named_tuple = { hello: "world" }
+hash = { :hello => "world" }
+
+array << "!" # OK
+tuple << "!" # Error
+hash["key"] = "value" # OK
+named_tuple["key"] = "value" # Error
+```
+
+#### Other syntactic suger:
+
+```crystal
+class MyClass
+  def initialize(@var1, @@var2)
+  end
+end
+```
+
+compiles to
+
+```ruby
+class MyClass
+  def initialize(var1, var2)
+    @var1 = var1
+    @var2 = var2
+  end
+end
+```
+
+```crystal
+str = "abc"
+case str
+when "a"
+  "only a"
+when .start_with?("a")
+  "starts with a"
+when String
+  "definitely a string"
+end
+```
+
+compiles to
+
+```ruby
+str = "abc"
+case str
+when "a"
+  "only a"
+when ->(x) { x.start_with?("a") }
+  "starts with a"
+when String
+  "any other string"
 end
 ```
 
