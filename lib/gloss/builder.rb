@@ -292,7 +292,18 @@ module Gloss
 
       when "HashLiteral"
 
-        src.write "{}"
+        contents = node[:elements].map do |k, v|
+          key = case k
+                when String
+                  k.to_sym
+                else
+                  visit_node k
+                end
+          value = visit_node v
+          "#{key.inspect} => #{value}"
+        end
+
+        src.write "{#{contents.join(",\n")}}"
         src.write ".freeze" if node[:frozen]
 
       when "Enum"

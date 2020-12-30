@@ -43,4 +43,8 @@ RSpec.describe Gloss::Builder do
   it "parses tuples as frozen arrays" do
     expect(Gloss::Builder.new("{ 'hello', 'world' }").run).to eq %{# frozen_string_literal: true\n["hello", "world"].freeze}
   end
+
+  it "parses named tuples as frozen hashes" do
+    expect(Gloss::Builder.new("{ hello: 'world' }").run).to eq %{# frozen_string_literal: true\n{:hello => "world"}.freeze}
+  end
 end
