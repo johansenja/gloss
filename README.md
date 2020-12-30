@@ -183,6 +183,25 @@ when String
 end
 ```
 
+#### Abstract classes (roadmap)
+
+```crystal
+abstract class BaseClass
+  attr_reader :var
+  
+  def initialize(@var); end
+end
+
+class Child < BaseClass
+  def what_is_var
+    "var is #{var}"
+  end
+end
+
+BaseClass.new(123) # Error - can't instantiate abstract class
+Child.new(123).what_is_var # Ok - "var is 123"
+```
+
 ## Usage:
 
 ```ruby
