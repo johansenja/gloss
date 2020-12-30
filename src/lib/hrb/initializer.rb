@@ -2,21 +2,21 @@
 
 require "yaml"
 
-module Hrb
+module Gloss
   class Initializer
     def initialize(@force)
     end
 
     def run
-      if File.exist?(".hrb.yml") && !@force
-        abort ".hrb.yml file already exists - aborting. Use --force to override."
+      if File.exist?(".gloss.yml") && !@force
+        abort ".gloss.yml file already exists - aborting. Use --force to override."
       end
 
-      File.open(".hrb.yml", "wb") do |file|
+      File.open(".gloss.yml", "wb") do |file|
         file.puts Config.default_config.transform_keys(&:to_s).to_yaml
       end
 
-      puts "Created .hrb.yml with default preferences"
+      puts "Created .gloss.yml with default preferences"
     end
   end
 end

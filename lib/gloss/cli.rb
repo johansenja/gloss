@@ -2,7 +2,7 @@
 
 require "optparse"
 
-module Hrb
+module Gloss
   class CLI
     def initialize(argv)
       @argv = argv
@@ -28,7 +28,7 @@ module Hrb
         end.parse(@argv)
         Initializer.new(force).run
       else
-        abort "Hrb doesn't know how to #{command}"
+        abort "Gloss doesn't know how to #{command}"
       end
     end
   end

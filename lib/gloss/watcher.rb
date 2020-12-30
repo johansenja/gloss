@@ -2,7 +2,7 @@
 
 require "listen"
 
-module Hrb
+module Gloss
   class Watcher
     def initialize
       @paths = %w[src/]

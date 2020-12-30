@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hrb
+module Gloss
   module Utils
     module_function
 

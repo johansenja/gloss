@@ -1,18 +1,18 @@
-require 'hrb'
+require 'gloss'
 
-RSpec.describe Hrb::Builder do
+RSpec.describe Gloss::Builder do
   it "reports type errors in type notations" do
-    expect { Hrb::Builder.new(<<~HRB).run }.to raise_error(Hrb::Errors::TypeError)
+    expect { Gloss::Builder.new(<<~GLOSS).run }.to raise_error(Gloss::Errors::TypeError)
       class MyClass
         def int : Integer
           return "abc"
         end
       end
-    HRB
+    GLOSS
   end
 
   it "reports type errors for human error" do
-    expect { Hrb::Builder.new(<<~HRB).run }.to raise_error(Hrb::Errors::TypeError)
+    expect { Gloss::Builder.new(<<~GLOSS).run }.to raise_error(Gloss::Errors::TypeError)
       class MyClass
         def int : Integer
           return 100
@@ -20,11 +20,11 @@ RSpec.describe Hrb::Builder do
       end
 
       MyClass.new.int.length
-    HRB
+    GLOSS
   end
 
   it "reports no errors for valid code" do
-    expect(Hrb::Builder.new(<<~HRB).run)
+    expect(Gloss::Builder.new(<<~GLOSS).run)
       class MyClass
         def int : Integer
           return 100
@@ -32,25 +32,25 @@ RSpec.describe Hrb::Builder do
       end
 
       MyClass.new.int.positive?
-    HRB
+    GLOSS
   end
 
   it "reports errors for invalid variables" do
-    expect { Hrb::Builder.new(<<~HRB).run }.to raise_error(Hrb::Errors::TypeError)
+    expect { Gloss::Builder.new(<<~GLOSS).run }.to raise_error(Gloss::Errors::TypeError)
       str : Symbol = "abc"
-    HRB
+    GLOSS
   end
 
   it "does not report errors for valid variables" do
-    expect(Hrb::Builder.new(<<~HRB).run)
+    expect(Gloss::Builder.new(<<~GLOSS).run)
       str : String = "abc"
-    HRB
+    GLOSS
   end
 
   it "reports errors when changing a variable's type" do
-    expect { Hrb::Builder.new(<<~HRB).run }.to raise_error(Hrb::Errors::TypeError)
+    expect { Gloss::Builder.new(<<~GLOSS).run }.to raise_error(Gloss::Errors::TypeError)
       str : String = "abc"
       str = :abc
-    HRB
+    GLOSS
   end
 end

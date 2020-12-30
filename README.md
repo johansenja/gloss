@@ -1,24 +1,24 @@
-# Hrb
+# Gloss
 
-Hrb is a high-level programming language which compiles to ruby; its aims are on transparency,
-efficiency, to enhance ruby's goal of developer happiness and productivity. Some of the features include:
+Gloss is a high-level programming language which compiles to ruby; its aims are on transparency,
+efficiency, to enhance ruby's goal of developer happiness and productivity. It is hihgly inspired by
+Crystal; some of the features include:
 
 - Type checking, via optional type annotations
 - Compile-time macros
-- Method overloading
 - Enums
-- abstract classes
 - Tuples and NamedTuples (think immutable arrays and hashes)
-- Stripping out unused classes, modules and methods at compile time to lead to slimmer projects
-- All pre-ruby 3.0 files are valid hrb files
+- All pre-ruby 3.0 files are valid gloss files
 - Other syntactic sugar
 
-For anyone familiar with Crystal, some of these feature should be fairly faimiliar.
+Coming soon:
+- Method overloading
+- abstract classes
 
 ## Example:
 
 ```crystal
-# src/lib/http_client.hrb
+# src/lib/http_client.gloss
 
 class HttpClient
 
@@ -84,73 +84,12 @@ class HttpClient
 end
 ```
 
-(with the assumption that all of the methods will be used within the rest of the app. Another
-example:
-
-```crystal
-module MyLib
-  module Utils
-    def abc
-      "abc"
-    end
-
-    def defg
-      "defg"
-    end
-
-    def hijk
-      "hijkl"
-    end
-  end
-
-  class Other
-    def foo
-    end
-  end
-end
-
-class Bar
-  include MyLib::Utils
-
-  def baz
-    abc
-  end
-end
-
-Bar.new.baz
-```
-
-will simplify to
-
-```ruby
-module MyLib
-  module Utils
-    def abc
-      "abc"
-    end
-  end
-end
-
-class Bar
-  include(MyLib::Utils)
-
-  def baz
-    abc
-  end
-end
-
-Bar.new.baz
-```
-
-Hrb aims to provide the necessary tooling to avoid dynamically defining or invoking methods, classes
-and modules, and to provide as much transparency and efficiency as possible in runtime code.
-
 ## Usage:
 
 ```ruby
 # Gemfile
 group :development do
-  gem "hrb"
+  gem "gloss"
 end
 ```
 
@@ -160,8 +99,8 @@ then
 
 then
 
-`hrb init # create .hrb.yml config file`
+`gloss init # create .gloss.yml config file`
 
 then
 
-`hrb build`
+`gloss build`

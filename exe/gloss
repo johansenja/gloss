@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
 require "bundler/setup"
-require "hrb"
+require "gloss"
 
-Hrb::CLI.new(ARGV).run
+Gloss::CLI.new(ARGV).run

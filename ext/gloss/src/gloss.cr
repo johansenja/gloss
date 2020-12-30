@@ -15,7 +15,7 @@ end
 
 def parse_buffer(buffer : String)
   begin
-    tree = Hrb::Parser.parse buffer
+    tree = Gloss::Parser.parse buffer
     tree.to_rb.to_json
   rescue e : Crystal::SyntaxException
     pp e.backtrace
@@ -23,9 +23,9 @@ def parse_buffer(buffer : String)
   end
 end
 
-fun init = Init_hrb
+fun init = Init_gloss
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
-  hrb = CrRuby.rb_define_module("Hrb");
-  CrRuby.rb_define_singleton_method(hrb, "parse_buffer", ->parse_buffer(CrRuby::VALUE, CrRuby::VALUE), 1);
+  gloss = CrRuby.rb_define_module("Gloss");
+  CrRuby.rb_define_singleton_method(gloss, "parse_buffer", ->parse_buffer(CrRuby::VALUE, CrRuby::VALUE), 1);
 end

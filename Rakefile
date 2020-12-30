@@ -6,8 +6,8 @@ require 'rubygems/package_task'
 require 'rspec/core/rake_task'
 require "bundler/gem_tasks"
 
-gem = Gem::Specification.load(File.dirname(__FILE__) + '/hrb.gemspec' )
-Rake::ExtensionTask.new('hrb', gem )
+gem = Gem::Specification.load(File.dirname(__FILE__) + '/gloss.gemspec' )
+Rake::ExtensionTask.new('gloss', gem )
 
 Gem::PackageTask.new gem  do |pkg|
   pkg.need_zip = pkg.need_tar = false

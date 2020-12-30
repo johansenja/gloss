@@ -1,7 +1,7 @@
 require "compiler/crystal/syntax/*"
 require "./lexer"
 
-module Hrb
+module Gloss
   class Parser < Crystal::Parser
     parse_operator :or_keyword, :and_keyword, "Or.new left, right", ":or"
     parse_operator :and_keyword, :prefix, "And.new left, right", ":and"

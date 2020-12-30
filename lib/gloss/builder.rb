@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hrb
+module Gloss
   class Builder
     attr_reader :tree
 
@@ -8,7 +8,7 @@ module Hrb
       @indent_level = 0
       @inside_macro = false
       @eval_vars = false
-      tree_json = Hrb.parse_buffer str
+      tree_json = Gloss.parse_buffer str
       begin
         @tree = JSON.parse tree_json, symbolize_names: true
       rescue JSON::ParserError
@@ -16,12 +16,18 @@ module Hrb
       end
       @current_scope = nil
       @steep_target = Steep::Project::Target.new(
-        name: "hrb",
+        name: "gloss",
         options: Steep::Project::Options.new,
-        source_patterns: ["hrb"],
+        source_patterns: ["gloss"],
         ignore_patterns: [],
         signature_patterns: []
       )
+      Dir.glob("sig/**/*.rbs").each do |fp|
+        next if !@steep_target.possible_signature_file?(fp) || @steep_target.signature_file?(fp)
+
+        Steep.logger.info { "Adding signature file: #{fp}" }
+        @steep_target.add_signature path, (Pathname(".") + fp).cleanpath.read
+      end
       @top_level_decls = {}
     end
 
@@ -62,7 +68,7 @@ module Hrb
       env = env.resolve_type_names
 
       @steep_target.instance_variable_set("@environment", env)
-      @steep_target.add_source("hrb", rb_str)
+      @steep_target.add_source("gloss", rb_str)
 
       definition_builder = RBS::DefinitionBuilder.new(env: env)
       factory = Steep::AST::Types::Factory.new(builder: definition_builder)
@@ -234,6 +240,7 @@ module Hrb
       when "ArrayLiteral"
 
         src.write("[", *node[:elements].map { |e| visit_node e }.join(", "), "]")
+        src.write ".freeze" if node[:frozen]
 
       when "StringInterpolation"
 
@@ -286,6 +293,7 @@ module Hrb
       when "HashLiteral"
 
         src.write "{}"
+        src.write ".freeze" if node[:frozen]
 
       when "Enum"
         src.write_ln "module #{node[:name]}"

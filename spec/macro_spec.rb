@@ -1,8 +1,8 @@
-require "hrb"
+require "gloss"
 
-RSpec.describe Hrb::Builder do
+RSpec.describe Gloss::Builder do
   it "expands macros" do
-    output = Hrb::Builder.new(<<-HRB).run
+    output = Gloss::Builder.new(<<-GLOSS).run
 class BaseController
   def render(**args) end
 end
@@ -21,8 +21,9 @@ end
     {% end %}
   end
 {% end %}
-    HRB
+    GLOSS
     expect(output.lines.map(&:lstrip).join("\n")).to eq <<-RUBY.lines.map(&:lstrip).join("\n")
+# frozen_string_literal: true
 class BaseController
   def render(**args)
   end

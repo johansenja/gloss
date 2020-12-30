@@ -1,12 +1,12 @@
-name: hrb
+name: gloss
 version: 0.1.0
 
 authors:
   - johansenja
 
 targets:
-  hrb:
-    main: ./hrb.cr
+  gloss:
+    main: ./gloss.cr
 #
 # add dependencies and development_dependencies:
 # dependencies:

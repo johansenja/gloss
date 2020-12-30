@@ -8,7 +8,7 @@ GIT
 PATH
   remote: .
   specs:
-    hrb (0.1.0)
+    gloss (0.1.0)
       fast_blank
       listen
       steep
@@ -101,7 +101,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  hrb!
+  gloss!
   pry-byebug
   rake-compiler
   rbs!

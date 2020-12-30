@@ -156,19 +156,31 @@ module Rb
     end
 
     class ArrayLiteral < Node
-      @info : NamedTuple(type: String, elements: Array(Node))
+      @info : NamedTuple(type: String, elements: Array(Node), frozen: Bool)
 
-      def initialize(elems)
+      def initialize(elems, frozen = false)
         @info = {
           type:     self.class.name.split("::").last,
           elements: elems,
+          frozen:   frozen,
         }
       end
 
       delegate :to_json, to: @info
     end
 
-    class HashLiteral < NodeWithValue
+    class HashLiteral < Node
+      @info : NamedTuple(type: String, elements: Array(Tuple(Node, Node)) | Array(Tuple(String, Node)), frozen: Bool)
+
+      def initialize(elems, frozen = false)
+        @info = {
+          type:     self.class.name.split("::").last,
+          elements: elems,
+          frozen:   frozen,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
 
     class RangeLiteral < Node
@@ -291,17 +303,16 @@ module Rb
     end
 
     class Call < Node
-      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block:
-      Block?, block_arg: Node?)
+      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?, block_arg: Node?)
 
       def initialize(object : Node?, name : String, args : Array(Node), block, block_arg)
         @info = {
-          type:   self.class.name.split("::").last,
-          name:   name,
-          args:   args,
-          object: object,
-          block:  block,
-          block_arg: block_arg
+          type:      self.class.name.split("::").last,
+          name:      name,
+          args:      args,
+          object:    object,
+          block:     block,
+          block_arg: block_arg,
         }
       end
 
@@ -373,8 +384,7 @@ module Rb
     end
 
     class TypeDeclaration < Node
-      @info : NamedTuple(type: String, var: Node, declared_type: Node, value: Node?, var_type:
-      String)
+      @info : NamedTuple(type: String, var: Node, declared_type: Node, value: Node?, var_type: String)
 
       def initialize(@var : Node, @declared_type : Node, @value : Node?)
         @info = {
@@ -448,15 +458,15 @@ module Rb
 
     class ExceptionHandler < Node
       @info : NamedTuple(type: String, body: Node, rescues: Array(Rescue)?, else: Node?,
-      ensure: Node?)
+        ensure: Node?)
 
       def initialize(body, rescues, else_node, ensure_node)
         @info = {
-          type:  self.class.name.split("::").last,
-          body: body,
+          type:    self.class.name.split("::").last,
+          body:    body,
           rescues: rescues,
-          else: else_node,
-          ensure: ensure_node
+          else:    else_node,
+          ensure:  ensure_node,
         }
       end
 
@@ -469,9 +479,9 @@ module Rb
       def initialize(body, types, name)
         @info = {
           type:  self.class.name.split("::").last,
-          body: body,
+          body:  body,
           types: types,
-          name: name,
+          name:  name,
         }
       end
 

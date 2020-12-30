@@ -1,23 +1,23 @@
-require 'hrb'
+require 'gloss'
 
-RSpec.describe Hrb::Builder do
+RSpec.describe Gloss::Builder do
   it "allows single quoted strings" do
-    expect(Hrb::Builder.new("str = 'abc'").run)
+    expect(Gloss::Builder.new("str = 'abc'").run)
   end
 
   it "doesn't require 'of' after empty arrays" do
-    expect(Hrb::Builder.new("arr = []").run)
+    expect(Gloss::Builder.new("arr = []").run)
   end
 
   it "doesn't require 'of' after empty hashes" do
-    expect(Hrb::Builder.new("hsh = {}").run)
+    expect(Gloss::Builder.new("hsh = {}").run)
   end
 
   it "captures all kinds of method args" do
-    output = Hrb::Builder.new(<<~HRB).run
+    output = Gloss::Builder.new(<<~GLOSS).run
       def abc(a : Float, b, *c, d : String? = nil, e: : Integer, f:, g: : String = nil, **h)
       end
-    HRB
+    GLOSS
     expect(output.to eq <<~RUBY)
       def abc(a, b, *c, d = nil, e:, f:, g: nil, **h)
       end
@@ -25,7 +25,7 @@ RSpec.describe Hrb::Builder do
   end
 
   it "parses rescue with ruby syntax" do
-    expect(Hrb::Builder.new(<<~HRB).run)
+    expect(Gloss::Builder.new(<<~GLOSS).run)
       begin
         raise "Abc"
       rescue RuntimeError => e
@@ -33,14 +33,14 @@ RSpec.describe Hrb::Builder do
       rescue NoMethodError
       rescue => e
       end
-    HRB
+    GLOSS
   end
 
   it "parses shorthand blocks with ruby syntax" do
-    expect(Hrb::Builder.new("[1].map(&:to_s)").run).to eq "# frozen_string_literal: true\n[1].map(&:to_s)\n"
+    expect(Gloss::Builder.new("[1].map(&:to_s)").run).to eq "# frozen_string_literal: true\n[1].map(&:to_s)\n"
   end
 
-  it "parsers tuples as frozen arrays" do
-    expect(Hrb::Builder.new("{ 'hello', 'world' }").run).to eq '# frozen_string_literal: true\n["hello", "world"].freeze'
+  it "parses tuples as frozen arrays" do
+    expect(Gloss::Builder.new("{ 'hello', 'world' }").run).to eq %{# frozen_string_literal: true\n["hello", "world"].freeze}
   end
 end

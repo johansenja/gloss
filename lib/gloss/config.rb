@@ -3,8 +3,8 @@
 require "ostruct"
 require "yaml"
 
-module Hrb
-  user_config = YAML.safe_load(File.read(".hrb.yml"))
+module Gloss
+  user_config = YAML.safe_load(File.read(".gloss.yml"))
   Config = OpenStruct.new(
     default_config: {
       frozen_string_literals: true,

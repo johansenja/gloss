@@ -73,13 +73,13 @@ module Crystal
 
   class HashLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new("{}")
+      Rb::AST::HashLiteral.new(@entries.map { |e| { e.key.to_rb, e.value.to_rb }})
     end
   end
 
   class NamedTupleLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new("{}")
+      Rb::AST::HashLiteral.new(@entries.map { |e| { e.key, e.value.to_rb }}, frozen: true)
     end
   end
 
@@ -97,7 +97,7 @@ module Crystal
 
   class TupleLiteral < ASTNode
     def to_rb
-      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb))
+      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb), frozen: true)
     end
   end
 

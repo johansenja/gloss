@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hrb
+module Gloss
   class Source < String
     def initialize(indent_level)
       super()
