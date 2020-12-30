@@ -203,9 +203,9 @@ module Hrb
         src.write(*node[:children].map { |a| visit_node(a, scope) })
       when "Call"
         obj = node[:object] ? "#{visit_node(node[:object], scope)}." : ""
-        args = node[:args]
-        args = if args && !args.empty?
-                 "(#{node[:args].map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")})"
+        args = node[:args] || EMPTY_ARRAY
+        args = if !args.empty? || node[:block_arg]
+                 "(#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]})"
                else
                  nil
                end

@@ -11,7 +11,7 @@ module Hrb
       end)
       File.open(".hrb.yml", "wb") { |file|
         file.puts(Config.default_config
-.transform_keys
+.transform_keys(&:to_s)
 .to_yaml)
       }
       puts("Created .hrb.yml with default preferences")

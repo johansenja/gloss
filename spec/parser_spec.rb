@@ -35,4 +35,12 @@ RSpec.describe Hrb::Builder do
       end
     HRB
   end
+
+  it "parses shorthand blocks with ruby syntax" do
+    expect(Hrb::Builder.new("[1].map(&:to_s)").run).to eq "# frozen_string_literal: true\n[1].map(&:to_s)\n"
+  end
+
+  it "parsers tuples as frozen arrays" do
+    expect(Hrb::Builder.new("{ 'hello', 'world' }").run).to eq '# frozen_string_literal: true\n["hello", "world"].freeze'
+  end
 end

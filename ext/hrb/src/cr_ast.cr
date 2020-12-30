@@ -134,7 +134,8 @@ module Crystal
 
   class Call < ASTNode
     def to_rb
-      Rb::AST::Call.new(@obj.try(&.to_rb), @name, @args.map(&.to_rb), @block.try(&.to_rb))
+      Rb::AST::Call.new(@obj.try(&.to_rb), @name, @args.map(&.to_rb), @block.try(&.to_rb),
+                        @block_arg.try(&.to_rb))
     end
   end
 

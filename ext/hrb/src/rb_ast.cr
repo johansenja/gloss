@@ -291,15 +291,17 @@ module Rb
     end
 
     class Call < Node
-      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?)
+      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block:
+      Block?, block_arg: Node?)
 
-      def initialize(object : Node?, name : String, args : Array(Node), block)
+      def initialize(object : Node?, name : String, args : Array(Node), block, block_arg)
         @info = {
           type:   self.class.name.split("::").last,
           name:   name,
           args:   args,
           object: object,
           block:  block,
+          block_arg: block_arg
         }
       end
 
