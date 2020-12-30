@@ -720,8 +720,13 @@ module Crystal
             return check_ident_or_keyword(:as, start)
           end
         when 'n'
-          if next_char == 'n' && next_char == 'o' && next_char == 't' && next_char == 'a' && next_char == 't' && next_char == 'i' && next_char == 'o' && next_char == 'n'
-            return check_ident_or_keyword(:annotation, start)
+          case next_char
+          when 'd'
+            @token.type = :and
+          when 'n'
+            if next_char == 'o' && next_char == 't' && next_char == 'a' && next_char == 't' && next_char == 'i' && next_char == 'o' && next_char == 'n'
+              return check_ident_or_keyword(:annotation, start)
+            end
           end
         else
           # scan_ident

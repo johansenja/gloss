@@ -18,8 +18,8 @@ module Hrb
     end
 
     def run
-      File.open(@out_path, "wb") do |file|
-        file << content
+      File.open(@output_path, "wb") do |file|
+        file << @content
       end
     end
   end

@@ -27,6 +27,7 @@ module Hrb
 
     def run
       rb_output = visit_node(@tree)
+      rb_output = "# frozen_string_literal: true\n#{rb_output}" if Config.frozen_string_literals
 
       unless check_types(rb_output)
         raise Errors::TypeError,
@@ -213,7 +214,7 @@ module Hrb
 
       when "Block"
 
-        src.write "{ |#{node[:rp_args].map { |a| visit_node a }.join(", ")}|\n"
+        src.write "{ |#{node[:args].map { |a| visit_node a }.join(", ")}|\n"
 
         indented(src) { src.write visit_node(node[:body]) }
 

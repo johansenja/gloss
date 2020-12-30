@@ -14,10 +14,13 @@ module Hrb
       when "watch"
         Watcher.new.watch
       when "build"
-        content = File.read(files.first)
+        (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.rb") : files).each do |fp|
+          puts "=====> Building #{fp}"
+          content = File.read(fp)
 
-        Writer.new(Builder.new(content).run,
-                   files.first)
+          puts "=====> Writing #{fp}"
+          Writer.new(Builder.new(content).run, fp).run
+        end
       when "init"
         force = false
         OptionParser.new do |opt|

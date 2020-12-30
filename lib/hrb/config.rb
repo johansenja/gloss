@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "ostruct"
+require "yaml"
 
 module Hrb
   user_config = YAML.safe_load(File.read(".hrb.yml"))

@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:duderman/rbs.git
+  revision: cb347ab605c6409d5ad38ba7439b170ed5996fae
+  branch: file-open-block
+  specs:
+    rbs (1.0.0)
+
 PATH
   remote: .
   specs:
@@ -49,7 +56,6 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rbs (1.0.0)
     regexp_parser (2.0.0)
     rexml (3.2.4)
     rspec (3.10.0)
@@ -98,6 +104,7 @@ DEPENDENCIES
   hrb!
   pry-byebug
   rake-compiler
+  rbs!
   rspec
   rubocop
 
