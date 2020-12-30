@@ -1,6 +1,6 @@
 # Gloss
 
-Gloss is a high-level programming language based on [Ruby](https://github.com/ruby/ruby) and [Crystal](https://github.com/crystal-lang/crystal), which compiles to ruby; its aims are on transparency,
+[Gloss](https://en.wikipedia.org/wiki/Gloss_(annotation)) is a high-level programming language based on [Ruby](https://github.com/ruby/ruby) and [Crystal](https://github.com/crystal-lang/crystal), which compiles to ruby; its aims are on transparency,
 efficiency, and to enhance ruby's goal of developer happiness and productivity. Some of the features include:
 
 - Type checking, via optional type annotations
