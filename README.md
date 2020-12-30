@@ -38,7 +38,7 @@ result.length # OK => 11
 #### Macros:
 
 ```crystal
-# src/lib/http_client.gloss
+# src/lib/http_client.gl
 
 class HttpClient
 
