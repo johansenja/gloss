@@ -119,6 +119,8 @@ class Language
     puts "my favourite language is #{language}"
   end
 end
+
+Language.new.favourite_language(Language::Lang::R)
 ```
 
 #### Tuples + Named Tuples:
