@@ -1,7 +1,18 @@
 require "compiler/crystal/syntax/*"
 require "./lexer"
+require "./cr_ast"
 
 module Gloss
+  def self.parse_string(string : String)
+    begin
+      tree = Gloss::Parser.parse string
+      tree.to_rb.to_json
+    rescue e : Crystal::SyntaxException
+      pp e.backtrace
+      e.to_s
+    end
+  end
+
   class Parser < Crystal::Parser
     parse_operator :or_keyword, :and_keyword, "Or.new left, right", ":or"
     parse_operator :and_keyword, :prefix, "And.new left, right", ":and"

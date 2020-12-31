@@ -1,5 +1,6 @@
 require "compiler/crystal/syntax/*"
 require "json"
+require "./rb_ast"
 
 module Crystal
   abstract class ASTNode

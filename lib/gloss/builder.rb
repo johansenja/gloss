@@ -4,85 +4,19 @@ module Gloss
   class Builder
     attr_reader :tree
 
-    def initialize(str)
+    def initialize(tree_hash, type_checker = nil)
       @indent_level = 0
       @inside_macro = false
       @eval_vars = false
-      tree_json = Gloss.parse_buffer str
-      begin
-        @tree = JSON.parse tree_json, symbolize_names: true
-      rescue JSON::ParserError
-        raise Errors::ParserError, tree_json
-      end
       @current_scope = nil
-      @steep_target = Steep::Project::Target.new(
-        name: "gloss",
-        options: Steep::Project::Options.new,
-        source_patterns: ["gloss"],
-        ignore_patterns: [],
-        signature_patterns: []
-      )
-      Dir.glob("sig/**/*.rbs").each do |fp|
-        next if !@steep_target.possible_signature_file?(fp) || @steep_target.signature_file?(fp)
-
-        Steep.logger.info { "Adding signature file: #{fp}" }
-        @steep_target.add_signature path, (Pathname(".") + fp).cleanpath.read
-      end
-      @top_level_decls = {}
+      @tree = tree_hash
+      @type_checker = type_checker
     end
 
     def run
       rb_output = visit_node(@tree)
       rb_output = "# frozen_string_literal: true\n#{rb_output}" if Config.frozen_string_literals
-
-      unless check_types(rb_output)
-        raise Errors::TypeError,
-              @steep_target.errors.map { |e|
-                case e
-                when Steep::Errors::NoMethod
-                  "Unknown method :#{e.method}, location: #{e.type.location.inspect}"
-                when Steep::Errors::MethodBodyTypeMismatch
-                  "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleArguments
-                  "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
-                when Steep::Errors::ReturnTypeMismatch
-                  "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleAssignment
-                  "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
-                else
-                  e.inspect
-                end
-              }.join("\n")
-      end
-
       rb_output
-    end
-
-    def check_types(rb_str)
-      env_loader = RBS::EnvironmentLoader.new
-      env = RBS::Environment.from_loader(env_loader)
-
-      @top_level_decls.each do |_, decl|
-        env << decl
-      end
-      env = env.resolve_type_names
-
-      @steep_target.instance_variable_set("@environment", env)
-      @steep_target.add_source("gloss", rb_str)
-
-      definition_builder = RBS::DefinitionBuilder.new(env: env)
-      factory = Steep::AST::Types::Factory.new(builder: definition_builder)
-      check = Steep::Subtyping::Check.new(factory: factory)
-      validator = Steep::Signature::Validator.new(checker: check)
-      validator.validate
-
-      raise Errors::TypeValidationError, validator.each_error.to_a.join("\n") unless validator.no_error?
-
-      @steep_target.run_type_check(env, check, Time.now)
-
-      @steep_target.status.is_a?(Steep::Project::Target::TypeCheckStatus) &&
-        @steep_target.no_error? &&
-        @steep_target.errors.empty?
     end
 
     def visit_node(node, scope = Scope.new)
@@ -121,7 +55,9 @@ module Gloss
         src.write_ln "end"
 
         @current_scope = old_parent_scope
-        @top_level_decls[class_type.name.name] = class_type unless @current_scope
+        if @type_checker
+          @type_checker.top_level_decls[class_type.name.name] = class_type unless @current_scope
+        end
       when "ModuleNode"
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
@@ -146,7 +82,9 @@ module Gloss
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         @current_scope = old_parent_scope
-        @top_level_decls[module_type.name.name] = module_type unless @current_scope
+        if @type_checker
+          @type_checker.top_level_decls[module_type.name.name] = module_type unless @current_scope
+        end
         src.write_ln "end"
       when "DefNode"
         args = render_args(node)
