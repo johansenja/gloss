@@ -16,7 +16,7 @@ require "gloss/scope"
 require "gloss/builder"
 require "gloss/errors"
 
-require "gloss.bundle"
+require "gls"
 
 EMPTY_ARRAY = [].freeze
 EMPTY_HASH = {}.freeze

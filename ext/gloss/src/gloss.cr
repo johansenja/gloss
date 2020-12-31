@@ -23,7 +23,7 @@ def parse_buffer(buffer : String)
   end
 end
 
-fun init = Init_gloss
+fun init = Init_gls
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
   gloss = CrRuby.rb_define_module("Gloss");
