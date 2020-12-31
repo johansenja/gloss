@@ -1,4 +1,5 @@
-require "gloss"
+require "gloss/type_checker"
+require "gloss/builder"
 
 RSpec.describe Gloss::TypeChecker do
   let!(:type_checker) { Gloss::TypeChecker.new }
