@@ -18,7 +18,7 @@ require "gloss/scope"
 require "gloss/builder"
 require "gloss/errors"
 
-require "gls"
+require "gls" unless ENV["CI"] # a bit of a hack for now
 
 EMPTY_ARRAY = [].freeze
 EMPTY_HASH = {}.freeze

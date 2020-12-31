@@ -1,4 +1,4 @@
-require "gloss/builder"
+require "gloss"
 
 RSpec.describe Gloss::Builder do
   it "expands macros" do
