@@ -3,3 +3,4 @@
 ext/.shards/
 tmp/
 *.log
+pkg/
