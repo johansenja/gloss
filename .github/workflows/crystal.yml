@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+defaults:
+  run:
+    working-directory: ext/gloss
+
 jobs:
   build:
 
@@ -16,8 +20,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Naivgate to crystal dir
-      run: cd ext/gloss
     - name: Install dependencies
       run: shards install
     - name: Run tests
