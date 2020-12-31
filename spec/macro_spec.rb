@@ -2,26 +2,9 @@ require "gloss"
 
 RSpec.describe Gloss::Builder do
   it "expands macros" do
-    output = Gloss::Builder.new(<<-GLOSS).run
-class BaseController
-  def render(**args) end
-end
-{% for controller_name in %w[Recipes Ingredients] %}
-  class {{controller_name}}Controller < BaseController
-    {% for method_name in %w[index create] %}
-      def {{method_name}}
-        {% if "{{method_name}}" == "create" %}
-          status = 201
-        {% else %}
-          status = 200
-        {% end %}
-        render json: { msg: "hello from {{method_name}} in {{controller_name}}Controller" },
-          status: status
-      end
-    {% end %}
-  end
-{% end %}
-    GLOSS
+    output = Gloss::Builder.new(
+      {:type=>"CollectionNode", :children=>[{:type=>"ClassNode", :name=>{:type=>"Path", :value=>"BaseController"}, :body=>{:type=>"DefNode", :name=>"render", :body=>nil, :rp_args=>[], :receiver=>nil, :return_type=>nil, :rest_kw_args=>{:type=>"Arg", :name=>"args", :external_name=>"args", :default_value=>nil, :restriction=>nil}}, :superclass=>nil, :type_vars=>nil, :abstract=>false}, {:type=>"MacroFor", :vars=>[{:type=>"Var", :name=>"controller_name"}], :expr=>{:type=>"ArrayLiteral", :elements=>[{:type=>"LiteralNode", :value=>"\"Recipes\"", :rb_type=>"String"}, {:type=>"LiteralNode", :value=>"\"Ingredients\"", :rb_type=>"String"}], :frozen=>false}, :body=>{:type=>"CollectionNode", :children=>[{:type=>"MacroLiteral", :value=>"\n  class "}, {:type=>"MacroExpression", :expr=>{:type=>"Var", :name=>"controller_name"}, :output=>true}, {:type=>"MacroLiteral", :value=>"Controller < BaseController\n    "}, {:type=>"MacroFor", :vars=>[{:type=>"Var", :name=>"method_name"}], :expr=>{:type=>"ArrayLiteral", :elements=>[{:type=>"LiteralNode", :value=>"\"index\"", :rb_type=>"String"}, {:type=>"LiteralNode", :value=>"\"create\"", :rb_type=>"String"}], :frozen=>false}, :body=>{:type=>"CollectionNode", :children=>[{:type=>"MacroLiteral", :value=>"\n      def "}, {:type=>"MacroExpression", :expr=>{:type=>"Var", :name=>"method_name"}, :output=>true}, {:type=>"MacroLiteral", :value=>"\n        "}, {:type=>"MacroIf", :condition=>{:type=>"Call", :name=>"==", :args=>[{:type=>"LiteralNode", :value=>"\"create\"", :rb_type=>"String"}], :object=>{:type=>"LiteralNode", :value=>"\"{{method_name}}\"", :rb_type=>"String"}, :block=>nil, :block_arg=>nil}, :then=>{:type=>"MacroLiteral", :value=>"\n          status = 201\n        "}, :else=>{:type=>"MacroLiteral", :value=>"\n          status = 200\n        "}}, {:type=>"MacroLiteral", :value=>"\n        render json: "}, {:type=>"MacroLiteral", :value=>"{ msg: \"hello from "}, {:type=>"MacroExpression", :expr=>{:type=>"Var", :name=>"method_name"}, :output=>true}, {:type=>"MacroLiteral", :value=>" in "}, {:type=>"MacroExpression", :expr=>{:type=>"Var", :name=>"controller_name"}, :output=>true}, {:type=>"MacroLiteral", :value=>"Controller\" },\n          status: status\n      "}, {:type=>"MacroLiteral", :value=>"end\n    "}]}}, {:type=>"MacroLiteral", :value=>"\n  "}, {:type=>"MacroLiteral", :value=>"end\n"}]}}]}
+    ).run
     expect(output.lines.map(&:lstrip).join("\n")).to eq <<-RUBY.lines.map(&:lstrip).join("\n")
 # frozen_string_literal: true
 class BaseController

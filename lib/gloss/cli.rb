@@ -17,9 +17,12 @@ module Gloss
         (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.rb") : files).each do |fp|
           puts "=====> Building #{fp}"
           content = File.read(fp)
+          tree_hash = Parser.new(content).run
+          type_checker = TypeChecker.new
+          rb_output = Builder.new(tree_hash, type_checker)
 
           puts "=====> Writing #{fp}"
-          Writer.new(Builder.new(content).run, fp).run
+          Writer.new(rb_output, fp).run
         end
       when "init"
         force = false
