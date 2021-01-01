@@ -198,7 +198,7 @@ module Crystal
 
   class Global < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::GlobalVar.new(@name)
     end
   end
 

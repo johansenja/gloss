@@ -236,6 +236,9 @@ module Rb
     class InstanceVar < Var
     end
 
+    class GlobalVar < Var
+    end
+
     abstract class Conditional < Node
       @info : NamedTuple(type: String, condition: Node, then: Node, else: Node)
 
