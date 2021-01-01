@@ -67,7 +67,9 @@ module Gloss
   end
 
   it "parses global variables" do
-    Gloss.parse_string("$var : String = 'hello world'").should be_truthy
+    Gloss.parse_string("$var : String = 'hello world'").should eq(
+      %q|{"type":"TypeDeclaration","var":{"type":"GlobalVar","name":"$var"},"declared_type":{"type":"Path","value":"String"},"value":{"type":"LiteralNode","value":"\"hello world\"","rb_type":"String"},"var_type":"GlobalVar"}|
+    )
   end
 
   it "parses for loops" do

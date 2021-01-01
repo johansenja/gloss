@@ -342,5 +342,249 @@ module Gloss
 
     #  {arg_name, external_name, found_space, uses_arg}
     #end
+
+    def parse_atomic_without_location
+      case @token.type
+      when :"("
+        parse_parenthesized_expression
+      when :"[]"
+        parse_empty_array_literal
+      when :"["
+        parse_array_literal
+      when :"{"
+        parse_hash_or_tuple_literal
+      when :"{{"
+        parse_percent_macro_expression
+      when :"{%"
+        parse_percent_macro_control
+      when :"::"
+        parse_generic_or_global_call
+      when :"->"
+        parse_fun_literal
+      when :"@["
+        parse_annotation
+      when :NUMBER
+        @wants_regex = false
+        node_and_next_token Crystal::NumberLiteral.new(@token.value.to_s, @token.number_kind)
+      when :CHAR
+        node_and_next_token Crystal::CharLiteral.new(@token.value.as(Char))
+      when :STRING, :DELIMITER_START
+        parse_delimiter
+      when :STRING_ARRAY_START
+        parse_string_array
+      when :SYMBOL_ARRAY_START
+        parse_symbol_array
+      when :SYMBOL
+        node_and_next_token Crystal::SymbolLiteral.new(@token.value.to_s)
+      when :GLOBAL
+        new_node_check_type_declaration Crystal::Global
+      when :"$~", :"$?"
+        location = @token.location
+        var = Crystal::Var.new(@token.to_s).at(location)
+
+        old_pos, old_line, old_column = current_pos, @line_number, @column_number
+        @temp_token.copy_from(@token)
+
+        next_token_skip_space
+
+        if @token.type == :"="
+          @token.copy_from(@temp_token)
+          self.current_pos, @line_number, @column_number = old_pos, old_line, old_column
+
+          push_var var
+          node_and_next_token var
+        else
+          @token.copy_from(@temp_token)
+          self.current_pos, @line_number, @column_number = old_pos, old_line, old_column
+
+          node_and_next_token Crystal::Global.new(var.name).at(location)
+        end
+      when :GLOBAL_MATCH_DATA_INDEX
+        value = @token.value.to_s
+        if value_prefix = value.rchop? '?'
+          method = "[]?"
+          value = value_prefix
+        else
+          method = "[]"
+        end
+        location = @token.location
+        node_and_next_token Crystal::Call.new(Crystal::Global.new("$~").at(location), method, Crystal::NumberLiteral.new(value.to_i))
+      when :__LINE__
+        node_and_next_token Crystal::MagicConstant.expand_line_node(@token.location)
+      when :__END_LINE__
+        raise "__END_LINE__ can only be used in default argument value", @token
+      when :__FILE__
+        node_and_next_token Crystal::MagicConstant.expand_file_node(@token.location)
+      when :__DIR__
+        node_and_next_token Crystal::MagicConstant.expand_dir_node(@token.location)
+      when :IDENT
+        # NOTE: Update `Parser#invalid_internal_name?` keyword list
+        # when adding or removing keyword to handle here.
+        case @token.value
+        when :begin
+          check_type_declaration { parse_begin }
+        when :nil
+          check_type_declaration { node_and_next_token Crystal::NilLiteral.new }
+        when :true
+          check_type_declaration { node_and_next_token Crystal::BoolLiteral.new(true) }
+        when :false
+          check_type_declaration { node_and_next_token Crystal::BoolLiteral.new(false) }
+        when :yield
+          check_type_declaration { parse_yield }
+        when :with
+          check_type_declaration { parse_yield_with_scope }
+        when :abstract
+          check_type_declaration do
+            check_not_inside_def("can't use abstract") do
+              doc = @token.doc
+
+              next_token_skip_space_or_newline
+              case @token.type
+              when :IDENT
+                case @token.value
+                when :def
+                  parse_def is_abstract: true, doc: doc
+                when :class
+                  parse_class_def is_abstract: true, doc: doc
+                when :struct
+                  parse_class_def is_abstract: true, is_struct: true, doc: doc
+                else
+                  unexpected_token
+                end
+              else
+                unexpected_token
+              end
+            end
+          end
+        when :def
+          check_type_declaration do
+            check_not_inside_def("can't define def") do
+              parse_def
+            end
+          end
+        when :macro
+          check_type_declaration do
+            check_not_inside_def("can't define macro") do
+              parse_macro
+            end
+          end
+        when :require
+          check_type_declaration do
+            check_not_inside_def("can't require") do
+              parse_require
+            end
+          end
+        when :case
+          check_type_declaration { parse_case }
+        when :select
+          check_type_declaration { parse_select }
+        when :if
+          check_type_declaration { parse_if }
+        when :unless
+          check_type_declaration { parse_unless }
+        when :include
+          check_type_declaration do
+            check_not_inside_def("can't include") do
+              parse_include
+            end
+          end
+        when :extend
+          check_type_declaration do
+            check_not_inside_def("can't extend") do
+              parse_extend
+            end
+          end
+        when :class
+          check_type_declaration do
+            check_not_inside_def("can't define class") do
+              parse_class_def
+            end
+          end
+        when :struct
+          check_type_declaration do
+            check_not_inside_def("can't define struct") do
+              parse_class_def is_struct: true
+            end
+          end
+        when :module
+          check_type_declaration do
+            check_not_inside_def("can't define module") do
+              parse_module_def
+            end
+          end
+        when :enum
+          check_type_declaration do
+            check_not_inside_def("can't define enum") do
+              parse_enum_def
+            end
+          end
+        when :while
+          check_type_declaration { parse_while }
+        when :until
+          check_type_declaration { parse_until }
+        when :return
+          check_type_declaration { parse_return }
+        when :next
+          check_type_declaration { parse_next }
+        when :break
+          check_type_declaration { parse_break }
+        when :lib
+          check_type_declaration do
+            check_not_inside_def("can't define lib") do
+              parse_lib
+            end
+          end
+        when :fun
+          check_type_declaration do
+            check_not_inside_def("can't define fun") do
+              parse_fun_def top_level: true, require_body: true
+            end
+          end
+        when :alias
+          check_type_declaration do
+            check_not_inside_def("can't define alias") do
+              parse_alias
+            end
+          end
+        when :pointerof
+          check_type_declaration { parse_pointerof }
+        when :sizeof
+          check_type_declaration { parse_sizeof }
+        when :instance_sizeof
+          check_type_declaration { parse_instance_sizeof }
+        when :offsetof
+          check_type_declaration { parse_offsetof }
+        when :typeof
+          check_type_declaration { parse_typeof }
+        when :private
+          check_type_declaration { parse_visibility_modifier Crystal::Visibility::Private }
+        when :protected
+          check_type_declaration { parse_visibility_modifier Crystal::Visibility::Protected }
+        when :asm
+          check_type_declaration { parse_asm }
+        when :annotation
+          check_type_declaration do
+            check_not_inside_def("can't define annotation") do
+              parse_annotation_def
+            end
+          end
+        else
+          set_visibility parse_var_or_call
+        end
+      when :CONST
+        parse_generic_or_custom_literal
+      when :INSTANCE_VAR
+        if @in_macro_expression && @token.value == "@type"
+          @is_macro_def = true
+        end
+        new_node_check_type_declaration Crystal::InstanceVar
+      when :CLASS_VAR
+        new_node_check_type_declaration Crystal::ClassVar
+      when :UNDERSCORE
+        node_and_next_token Crystal::Underscore.new
+      else
+        unexpected_token_in_atomic
+      end
+    end
   end
 end

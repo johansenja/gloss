@@ -216,6 +216,10 @@ module Gloss
 
         src.write node[:name]
 
+      when "GlobalVar"
+
+        src.write node[:name]
+
       when "Arg"
 
         src.write node[:external_name]
