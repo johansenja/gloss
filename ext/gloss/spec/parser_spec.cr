@@ -7,7 +7,9 @@ module Gloss
     end
 
     it "doesn't require 'of' after empty arrays" do
-      Gloss.parse_string("arr = []").should be_truthy
+      Gloss.parse_string("arr = []").should eq(
+        %q|{"type":"Assign","op":null,"target":{"type":"Var","name":"arr"},"value":{"type":"ArrayLiteral","elements":[],"frozen":false}}|
+      )
     end
 
     it "doesn't require 'of' after empty hashes" do
@@ -50,5 +52,29 @@ module Gloss
     Gloss.parse_string("{ hello: 'world' }").should eq(
       %q<{"type":"HashLiteral","elements":[["hello",{"type":"LiteralNode","value":"\"world\"","rb_type":"String"}]],"frozen":true}>
     )
+  end
+
+  it "parses the and operator" do
+    Gloss.parse_string("puts 'hello world' if 1 and 2").should be_truthy
+  end
+
+  it "parses the or operator" do
+    Gloss.parse_string("puts 'hello world' if true or false").should be_truthy
+  end
+
+  it "parses the not operator" do
+    Gloss.parse_string("puts 'hello world' if true and not false").should be_truthy
+  end
+
+  it "parses global variables" do
+    Gloss.parse_string("$var : String = 'hello world'").should be_truthy
+  end
+
+  it "parses for loops" do
+    Gloss.parse_string(<<-GLS).should be_truthy
+      for k, v in { hello: world }
+        puts key: k, value: v
+      end
+    GLS
   end
 end
