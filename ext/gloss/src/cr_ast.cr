@@ -140,17 +140,18 @@ module Crystal
     end
   end
 
-  class NamedArgument < ASTNode
-    def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
-    end
-  end
-
   class Arg < ASTNode
     property keyword_arg : Bool = false
 
     def to_rb
-      Rb::AST::Arg.new(@name, @external_name, @restriction.try(&.to_rb), @default_value.try(&.to_rb))
+      Rb::AST::Arg.new(@name, @external_name, @restriction.try(&.to_rb),
+                       @default_value.try(&.to_rb), @keyword_arg)
+    end
+  end
+
+  class NamedArgument < ASTNode
+    def to_rb
+      Rb::AST::EmptyNode.new(self.class.name)
     end
   end
 
@@ -360,9 +361,15 @@ module Crystal
     end
   end
 
+  class Union < ASTNode
+    def to_rb
+      Rb::AST::Union.new(@types.map(&.to_rb))
+    end
+  end
+
   {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
                          Select ImplicitObj AnnotationDef While Until Generic UninitializedVar
-                         ProcLiteral ProcPointer Union Self Yield Include
+                         ProcLiteral ProcPointer Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
                          Metaclass Cast NilableCast TypeOf Annotation
                          Underscore MagicConstant Asm AsmOperand] %}

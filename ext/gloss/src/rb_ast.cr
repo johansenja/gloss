@@ -114,15 +114,17 @@ module Rb
 
     class Arg < Node
       @info : NamedTuple(type: String, name: String, external_name: String, default_value: Node?,
-        restriction: Node?)
+        restriction: Node?, keyword_arg: Bool)
 
-      def initialize(name : String, external_name : String, restriction : Node?, default_value : Node?)
+      def initialize(name : String, external_name : String, restriction : Node?, default_value :
+          Node?, keyword_arg)
         @info = {
           type:          self.class.name.split("::").last,
           name:          name,
           restriction:   restriction,
           default_value: default_value,
           external_name: external_name,
+          keyword_arg: keyword_arg
         }
       end
 
@@ -485,6 +487,19 @@ module Rb
           body:  body,
           types: types,
           name:  name,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class Union < Node
+      @info : NamedTuple(type: String, types: Array(Node))
+
+      def initialize(types)
+        @info = {
+          type:  self.class.name.split("::").last,
+          types: types
         }
       end
 

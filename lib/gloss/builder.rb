@@ -137,7 +137,7 @@ module Gloss
         if @current_scope
           @current_scope.members << method_definition
         else
-          @type_env << method_definition # should be new class declaration for Object with method_definition as private method
+          @type_checker.type_env << method_definition if @type_checker # should be new class declaration for Object with method_definition as private method
         end
 
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
@@ -221,8 +221,15 @@ module Gloss
         src.write node[:name]
 
       when "Arg"
+        val = node[:external_name]
+        if node[:keyword_arg]
+          val += ":"
+          val += " #{visit_node(node[:default_value])}" if node[:default_value]
+        elsif node[:default_value]
+          val += " = #{visit_node(node[:default_value])}"
+        end
 
-        src.write node[:external_name]
+        src.write val
 
       when "UnaryExpr"
 
