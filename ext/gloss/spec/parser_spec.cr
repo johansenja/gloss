@@ -17,7 +17,8 @@ module Gloss
     end
 
     it "parses all kinds of method args" do
-      Gloss.parse_string(<<-GLS).should eq("TBD")
+      output = %q|{"type":"DefNode","name":"abc","body":null,"rp_args":[{"type":"Arg","name":"a","external_name":"a","default_value":null,"restriction":{"type":"Path","value":"Float"},"keyword_arg":false},{"type":"Arg","name":"b","external_name":"b","default_value":null,"restriction":null,"keyword_arg":false},{"type":"Arg","name":"c","external_name":"c","default_value":null,"restriction":null,"keyword_arg":false,splat: "true"},{"type":"Arg","name":"d","external_name":"d","default_value":{"type":"LiteralNode","value":"nil","rb_type":"NilClass"},"restriction":{"type":"Union","types":[{"type":"Path","value":"String"},{"type":"Path","value":"Nil"}]},"keyword_arg":false},{"type":"Arg","name":"e","external_name":"e","default_value":null,"restriction":{"type":"Path","value":"Integer"},"keyword_arg":true},{"type":"Arg","name":"f","external_name":"f","default_value":null,"restriction":null,"keyword_arg":true},{"type":"Arg","name":"g","external_name":"g","default_value":{"type":"LiteralNode","value":"nil","rb_type":"NilClass"},"restriction":{"type":"Path","value":"String"},"keyword_arg":true}],"receiver":null,"return_type":null,"rest_kw_args":{"type":"Arg","name":"h","external_name":"h","default_value":null,"restriction":null,"keyword_arg":false}}|
+      Gloss.parse_string(<<-GLS).should eq output
         def abc(a : Float, b, *c, d : String? = nil, e: : Integer, f:, g: : String = nil, **h)
         end
       GLS
