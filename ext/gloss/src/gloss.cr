@@ -7,7 +7,12 @@ def parse_string(self : CrRuby::VALUE, str : CrRuby::VALUE)
   st = CrRuby.rb_str_to_str(str)
   string = String.new(CrRuby.rb_string_value_cstr(pointerof(st)))
 
-  output = Gloss.parse_string(string)
+  output = begin
+             Gloss.parse_string(string)
+           rescue e : Crystal::SyntaxException
+             pp e.backtrace
+             e.to_s
+           end
 
   CrRuby.rb_str_new_cstr(output)
 end
