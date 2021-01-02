@@ -35,7 +35,7 @@ module Gloss
         src.write_ln "class #{class_name}#{" < #{superclass}" if superclass}"
 
         current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
-        class_type = RBS::AST::Declarations::Class.new(
+        class_type = RBS::AST::Declarations::AbstractableClass.new(
           name: RBS::TypeName.new(
             namespace: current_namespace,
             name: class_name.to_sym
@@ -45,7 +45,8 @@ module Gloss
           members: [],
           annotations: [],
           location: node[:location],
-          comment: node[:comment]
+          comment: node[:comment],
+          abstract: node[:abstract]
         )
         old_parent_scope = @current_scope
         @current_scope = class_type
@@ -55,8 +56,9 @@ module Gloss
         src.write_ln "end"
 
         @current_scope = old_parent_scope
-        if @type_checker
-          @type_checker.top_level_decls[class_type.name.name] = class_type unless @current_scope
+
+        if @type_checker and not @current_scope
+          @type_checker.top_level_decls[class_type.name.name] = class_type
         end
       when "ModuleNode"
         module_name = visit_node node[:name]

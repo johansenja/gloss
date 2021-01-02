@@ -18,6 +18,9 @@ require "gloss/scope"
 require "gloss/builder"
 require "gloss/errors"
 
+require_relative "ext/rbs"
+require_relative "ext/steep"
+
 require "gls" unless ENV["CI"] # a bit of a hack for now
 
 EMPTY_ARRAY = [].freeze

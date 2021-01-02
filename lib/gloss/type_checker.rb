@@ -26,15 +26,15 @@ module Gloss
         raise Errors::TypeError,
               @steep_target.errors.map { |e|
                 case e
-                when Steep::Errors::NoMethod
+                when Steep::Diagnostic::Ruby::NoMethod
                   "Unknown method :#{e.method}, location: #{e.type.location.inspect}"
-                when Steep::Errors::MethodBodyTypeMismatch
+                when Steep::Diagnostic::Ruby::MethodBodyTypeMismatch
                   "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleArguments
+                when Steep::Diagnostic::Ruby::IncompatibleArguments
                   "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
-                when Steep::Errors::ReturnTypeMismatch
+                when Steep::Diagnostic::Ruby::ReturnTypeMismatch
                   "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleAssignment
+                when Steep::Diagnostic::Ruby::IncompatibleAssignment
                   "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
                 else
                   e.inspect

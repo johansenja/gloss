@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "fast_blank"
   s.add_runtime_dependency "listen"
   s.add_runtime_dependency "rbs"
-  s.add_runtime_dependency "steep"
+  # s.add_runtime_dependency "steep"
 
   s.add_development_dependency "rake-compiler"
   s.add_development_dependency "rspec"

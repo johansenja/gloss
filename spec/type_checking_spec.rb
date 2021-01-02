@@ -256,4 +256,38 @@ RSpec.describe Gloss::TypeChecker do
     ).run
     expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
   end
+
+  it "reports an error for instantiating an abstract class" do
+    output = Gloss::Builder.new(
+      {
+        type: "CollectionNode",
+        children: [
+          {
+            type: "ClassNode",
+            name: {
+              type: "Path",
+              value: "AbcClass"
+            },
+            body: nil,
+            superclass: nil,
+            type_vars: [],
+            abstract: true
+          },
+          {
+            type: "Call",
+            name: "new",
+            args: [],
+            object: {
+              type: "Path",
+              value: "AbcClass"
+            },
+            block: nil,
+            block_arg: nil
+          }
+        ]
+      },
+      type_checker
+    ).run
+    expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
+  end
 end

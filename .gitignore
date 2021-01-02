@@ -1,4 +1,4 @@
-*.bundle
+*.bundle*
 *.o
 ext/.shards/
 tmp/
