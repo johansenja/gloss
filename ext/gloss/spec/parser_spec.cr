@@ -80,4 +80,12 @@ module Gloss
       end
     GLS
   end
+
+  it "parses generics as RBS generics" do
+    expected =
+      %q|{"type":"TypeDeclaration","var":{"type":"Var","name":"hsh"},"declared_type":{"type":"Generic","name":{"type":"Path","value":"Hash"},"args":[{"type":"Path","value":"String"},{"type":"Path","value":"String"}]},"value":{"type":"HashLiteral","elements":[[{"type":"LiteralNode","value":"\"hello\"","rb_type":"String"},{"type":"LiteralNode","value":"\"world\"","rb_type":"String"}]],"frozen":false},"var_type":"Var"}|
+    Gloss.parse_string(<<-GLS).should eq expected
+      hsh : Hash[String, String] = { "hello" => "world" }
+    GLS
+  end
 end

@@ -352,6 +352,41 @@ module Gloss
       {arg_name, external_name, found_space, uses_arg}
     end
 
+    ### USE [] INSTEAD OF CRYSTAL'S ()
+    def parse_type_args(name)
+      return name unless @token.type == :"["
+
+      next_token_skip_space_or_newline
+      args = [] of Crystal::ASTNode
+      if named_tuple_start? || string_literal_start?
+        named_args = parse_named_type_args(:"]")
+      else
+        args << parse_type_splat { parse_type_arg }
+        while @token.type == :","
+          next_token_skip_space_or_newline
+          break if @token.type == :"]" # allow trailing comma
+          args << parse_type_splat { parse_type_arg }
+        end
+
+        has_int = args.any? do |arg|
+          arg.is_a?(Crystal::NumberLiteral) ||
+            arg.is_a?(Crystal::SizeOf) ||
+            arg.is_a?(Crystal::InstanceSizeOf) ||
+            arg.is_a?(Crystal::OffsetOf)
+        end
+        if @token.type == :"->" && !has_int
+          args = [parse_proc_type_output(args, args.first.location)] of Crystal::ASTNode
+        end
+      end
+
+      skip_space_or_newline
+      check :"]"
+      end_location = token_end_location
+      next_token
+
+      Crystal::Generic.new(name, args, named_args).at(name).at_end(end_location)
+    end
+
     def parse_atomic_without_location
       case @token.type
       when :"("
