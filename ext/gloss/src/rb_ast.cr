@@ -505,5 +505,19 @@ module Rb
 
       delegate :to_json, to: @info
     end
+
+    class Generic < Node
+      @info : NamedTuple(type: String, name: Node, args: Array(Node))
+
+      def initialize(name, args)
+        @info = {
+          type:  self.class.name.split("::").last,
+          name: name,
+          args: args
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
   end
 end

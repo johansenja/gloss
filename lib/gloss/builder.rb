@@ -335,6 +335,8 @@ module Gloss
           src.write_ln visit_node(node[:ensure])
         end
         src.write_ln "end"
+      when "Generic"
+        src.write "#{node[:name]}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
       when "EmptyNode"
         # pass
       else

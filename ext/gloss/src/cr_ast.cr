@@ -367,8 +367,14 @@ module Crystal
     end
   end
 
+  class Generic < ASTNode
+    def to_rb
+      Rb::AST::Generic.new(@name.to_rb, @type_vars.map(&.to_rb))
+    end
+  end
+
   {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
-                         Select ImplicitObj AnnotationDef While Until Generic UninitializedVar
+                         Select ImplicitObj AnnotationDef While Until UninitializedVar
                          ProcLiteral ProcPointer Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
                          Metaclass Cast NilableCast TypeOf Annotation
