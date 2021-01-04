@@ -394,13 +394,13 @@ module Crystal
 
   class Include < ASTNode
     def to_rb
-      Rb::AST::Include.new(@name)
+      Rb::AST::Include.new(@name.to_rb)
     end
   end
 
   class Extend < ASTNode
     def to_rb
-      Rb::AST::Extend.new(@name)
+      Rb::AST::Extend.new(@name.to_rb)
     end
   end
 
