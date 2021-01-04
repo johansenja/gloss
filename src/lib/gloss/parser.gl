@@ -2,10 +2,10 @@
 
 module Gloss
   class Parser
-    def initialize(@str)
+    def initialize(@str : String)
     end
 
-    def run
+    def run : String
       tree_json = Gloss.parse_buffer(@str)
       begin
         JSON.parse tree_json, symbolize_names: true
