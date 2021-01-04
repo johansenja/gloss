@@ -74,13 +74,13 @@ module Crystal
 
   class HashLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new(@entries.map { |e| { e.key.to_rb, e.value.to_rb }})
+      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key.to_rb, e.value.to_rb} })
     end
   end
 
   class NamedTupleLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new(@entries.map { |e| { e.key, e.value.to_rb }}, frozen: true)
+      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key, e.value.to_rb} }, frozen: true)
     end
   end
 
@@ -105,7 +105,7 @@ module Crystal
   class Def < ASTNode
     def to_rb
       Rb::AST::DefNode.new(@name, @args.map(&.to_rb), @body.to_rb, receiver.try(&.to_rb),
-                           return_type.try(&.to_rb), @double_splat.try(&.to_rb))
+        return_type.try(&.to_rb), @double_splat.try(&.to_rb))
     end
   end
 
@@ -136,7 +136,7 @@ module Crystal
   class Call < ASTNode
     def to_rb
       Rb::AST::Call.new(@obj.try(&.to_rb), @name, @args.map(&.to_rb), @block.try(&.to_rb),
-                        @block_arg.try(&.to_rb))
+        @block_arg.try(&.to_rb))
     end
   end
 
@@ -145,7 +145,7 @@ module Crystal
 
     def to_rb
       Rb::AST::Arg.new(@name, @external_name, @restriction.try(&.to_rb),
-                       @default_value.try(&.to_rb), @keyword_arg)
+        @default_value.try(&.to_rb), @keyword_arg)
     end
   end
 
@@ -295,7 +295,20 @@ module Crystal
   class When < ASTNode
     def to_rb
       Rb::AST::When.new(
-        @conds.map(&.to_rb),
+        @conds.map do |c|
+          if c.is_a? Call
+            arg_name = "x"
+            ProcLiteral.new(
+              Def.new(
+                "->",
+                [Arg.new(arg_name)],
+                c.tap { |call| call.obj = Var.new(arg_name) }
+              )
+            ).to_rb
+          else
+            c.to_rb
+          end
+        end,
         @body.to_rb,
         @exhaustive
       )
@@ -351,7 +364,7 @@ module Crystal
   class ExceptionHandler < ASTNode
     def to_rb
       Rb::AST::ExceptionHandler.new(@body.to_rb, @rescues.try(&.map(&.to_rb)), @else.try(&.to_rb),
-                                    @ensure.try(&.to_rb))
+        @ensure.try(&.to_rb))
     end
   end
 
@@ -373,9 +386,15 @@ module Crystal
     end
   end
 
+  class ProcLiteral < ASTNode
+    def to_rb
+      Rb::AST::Proc.new(@def.to_rb)
+    end
+  end
+
   {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
                          Select ImplicitObj AnnotationDef While Until UninitializedVar
-                         ProcLiteral ProcPointer Self Yield Include
+                         ProcPointer Self Yield Include
                          Extend LibDef FunDef TypeDef CStructOrUnionDef ExternalVar Alias
                          Metaclass Cast NilableCast TypeOf Annotation
                          Underscore MagicConstant Asm AsmOperand] %}
