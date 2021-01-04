@@ -11,18 +11,17 @@ module Gloss
   end
   class Writer
     include Utils
-    def initialize(content, src_path, output_path =     Pathname.new(src_path_to_output_path(@src_path))
+    def initialize(content, src_path, output_path =     Pathname.new(src_path_to_output_path(src_path))
 )
       @content = content
-      @src_path = src_path
       @output_path = output_path
     end
     def run()
-      unless @output_path.directory? || @output_path.parent
+      unless       @output_path.parent
 .exist?
-        FileUtils.mkdir_p(@output_path)
+        FileUtils.mkdir_p(@output_path.parent)
       end
-      File.open(op, "wb") { |file|
+      File.open(@output_path, "wb") { |file|
         file.<<(@content)
       }
     end
