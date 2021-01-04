@@ -519,5 +519,18 @@ module Rb
 
       delegate :to_json, to: @info
     end
+
+    class Proc < Node
+      @info : NamedTuple(type: String, function: DefNode)
+
+      def initialize(function)
+        @info = {
+          type:  self.class.name.split("::").last,
+          function: function
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
   end
 end

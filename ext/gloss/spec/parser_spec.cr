@@ -88,4 +88,17 @@ module Gloss
       hsh : Hash[String, String] = { "hello" => "world" }
     GLS
   end
+
+  it "parses method calls in case statements" do
+    expected =
+      %q|{"type":"Case","condition":{"type":"LiteralNode","value":"\"abc\"","rb_type":"String"},"whens":[{"type":"When","conditions":[{"type":"Proc","function":{"type":"DefNode","name":"->","body":{"type":"Call","name":"start_with?","args":[{"type":"LiteralNode","value":"\"a\"","rb_type":"String"}],"object":{"type":"Var","name":"x"},"block":null,"block_arg":null},"rp_args":[{"type":"Arg","name":"x","external_name":"x","default_value":null,"restriction":null,"keyword_arg":false}],"receiver":null,"return_type":null,"rest_kw_args":null}}],"body":{"type":"LiteralNode","value":"1","rb_type":"Integer"},"exhaustive":false}],"else":{"type":"LiteralNode","value":"0","rb_type":"Integer"},"exhaustive":false}|
+    Gloss.parse_string(<<-GLS).should eq expected
+      case "abc"
+      when .start_with? 'a'
+        1
+      else
+        0
+      end
+    GLS
+  end
 end

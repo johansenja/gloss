@@ -337,6 +337,9 @@ module Gloss
         src.write_ln "end"
       when "Generic"
         src.write "#{node[:name]}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
+      when "Proc"
+        fn = node[:function]
+        src.write "->#{render_args(fn)} { #{visit_node fn[:body]} }"
       when "EmptyNode"
         # pass
       else
