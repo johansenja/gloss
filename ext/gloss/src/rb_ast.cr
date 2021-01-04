@@ -113,16 +113,16 @@ module Rb
     end
 
     class Arg < Node
-      @info : NamedTuple(type: String, name: String, external_name: String, default_value: Node?,
+      @info : NamedTuple(type: String, name: String, external_name: String, value: Node?,
         restriction: Node?, keyword_arg: Bool)
 
-      def initialize(name : String, external_name : String, restriction : Node?, default_value :
+      def initialize(name : String, external_name : String, restriction : Node?, value :
           Node?, keyword_arg)
         @info = {
           type:          self.class.name.split("::").last,
           name:          name,
           restriction:   restriction,
-          default_value: default_value,
+          value: value,
           external_name: external_name,
           keyword_arg: keyword_arg
         }
@@ -308,9 +308,10 @@ module Rb
     end
 
     class Call < Node
-      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?, block_arg: Node?)
+      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block:
+      Block?, block_arg: Node?, named_args: Array(Arg)?)
 
-      def initialize(object : Node?, name : String, args : Array(Node), block, block_arg)
+      def initialize(object : Node?, name : String, args : Array(Node), named_args, block, block_arg)
         @info = {
           type:      self.class.name.split("::").last,
           name:      name,
@@ -318,6 +319,7 @@ module Rb
           object:    object,
           block:     block,
           block_arg: block_arg,
+          named_args: named_args,
         }
       end
 

@@ -6,6 +6,7 @@ module Gloss
 
     def src_path_to_output_path(src_path)
       src_path.sub(%r{\A(?:\./)?#{Config.src_dir}/?}, "")
+              .sub(/\.gl$/, ".rb")
     end
   end
 

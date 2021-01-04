@@ -148,6 +148,7 @@ module Gloss
       when "Call"
         obj = node[:object] ? "#{visit_node(node[:object], scope)}." : ""
         args = node[:args] || EMPTY_ARRAY
+        args += node[:named_args] if node[:named_args]
         args = if !args.empty? || node[:block_arg]
                  "(#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]})"
                else
@@ -224,9 +225,9 @@ module Gloss
         val = node[:external_name]
         if node[:keyword_arg]
           val += ":"
-          val += " #{visit_node(node[:default_value])}" if node[:default_value]
-        elsif node[:default_value]
-          val += " = #{visit_node(node[:default_value])}"
+          val += " #{visit_node(node[:value])}" if node[:value]
+        elsif node[:value]
+          val += " = #{visit_node(node[:value])}"
         end
 
         src.write val
@@ -321,19 +322,21 @@ module Gloss
         src.write_ln "#{visit_node(node[:var])} = #{visit_node(node[:value])}"
       when "ExceptionHandler"
         src.write_ln "begin"
-        src.write_ln visit_node(node[:body])
-        node[:rescues]&.each do |r|
-          src.write_ln "rescue #{r[:types].map { |n| visit_node n }.join(", ") if r[:types]}#{" => #{r[:name]}" if r[:name]}"
-          src.write_ln visit_node(r[:body]) if r[:body]
+        indented src do
+          src.write_ln visit_node(node[:body])
         end
-        if node[:else]
-          src.write_ln "else"
-          src.write_ln visit_node(node[:else])
-        end
-        if node[:ensure]
-          src.write_ln "ensure"
-          src.write_ln visit_node(node[:ensure])
-        end
+          node[:rescues]&.each do |r|
+            src.write_ln "rescue #{r[:types].map { |n| visit_node n }.join(", ") if r[:types]}#{" => #{r[:name]}" if r[:name]}"
+            indented(src) { src.write_ln visit_node(r[:body]) } if r[:body]
+          end
+          if node[:else]
+            src.write_ln "else"
+            indented(src) { src.write_ln visit_node(node[:else]) }
+          end
+          if node[:ensure]
+            src.write_ln "ensure"
+            intended(src) { src.write_ln visit_node(node[:ensure]) }
+          end
         src.write_ln "end"
       when "Generic"
         src.write "#{node[:name]}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
