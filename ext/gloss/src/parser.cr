@@ -45,6 +45,112 @@ module Gloss
       Crystal::HashLiteral.new(entries, of).at_end(end_location)
     end
 
+    def multi_assign_target?(exp)
+      case exp
+      when Crystal::Underscore, Crystal::Var, Crystal::InstanceVar, Crystal::ClassVar,
+        Crystal::Global, Crystal::Assign, Crystal::Splat # allow splats
+        true
+      when Crystal::Call
+        !exp.has_parentheses? && (
+          (exp.args.empty? && !exp.named_args) ||
+            (exp.name[0].ascii_letter? && exp.name.ends_with?('=')) ||
+            exp.name == "[]" || exp.name == "[]="
+        )
+      else
+        false
+      end
+    end
+
+    # TODO:
+    #   - allow splat for multiple assignment, as long as there is one target and it is just
+    #   assignment (no op_assignment ie +=)
+    #     eg. first, *rest = [0,1,2,3]          # OK
+    #         *first, last = [0,1,2,3]          # OK
+    #         first, *middle, last = [0,1,2,3]  # OK
+    #         first, *rest = [0,1,2,3], "abc"   # Error
+    #         first, *rest += [0,1,2,3], "abc"  # Error
+    #         first, *rest += [0,1,2,3]         # Error
+    def parse_multi_assign
+      location = @token.location
+
+      last = parse_expression
+      skip_space
+
+      last_is_target = multi_assign_target?(last)
+
+      case @token.type
+      when :","
+        unless last_is_target
+          raise "Multiple assignment is not allowed for constants" if last.is_a?(Crystal::Path)
+          unexpected_token
+        end
+      when :NEWLINE, :";"
+        return last
+      else
+        if end_token?
+          return last
+        else
+          unexpected_token
+        end
+      end
+
+      exps = [] of Crystal::ASTNode
+      exps << last
+
+      i = 0
+      assign_index = -1
+
+      while @token.type == :","
+        if assign_index == -1 && multi_assign_middle?(last)
+          assign_index = i
+        end
+
+        i += 1
+
+        next_token_skip_space_or_newline
+        last = parse_op_assign(allow_ops: false)
+        if assign_index == -1 && !multi_assign_target?(last)
+          unexpected_token
+        end
+
+        exps << last
+        skip_space
+      end
+
+      if assign_index == -1 && multi_assign_middle?(last)
+        assign_index = i
+      end
+
+      if assign_index == -1
+        unexpected_token
+      end
+
+      targets = exps[0...assign_index].map { |exp| multiassign_left_hand(exp) }
+
+      assign = exps[assign_index]
+      values = [] of Crystal::ASTNode
+
+      case assign
+      when Crystal::Assign
+        targets << multiassign_left_hand(assign.target)
+        values << assign.value
+      when Crystal::Call
+        assign.name = assign.name.byte_slice(0, assign.name.bytesize - 1)
+        targets << assign
+        values << assign.args.pop
+      else
+        raise "BUG: multiassign index expression can only be Assign or Call"
+      end
+
+      values.concat exps[assign_index + 1..-1]
+      if values.size != 1 && targets.size != values.size
+        raise "Multiple assignment count mismatch", location
+      end
+
+      multi = Crystal::MultiAssign.new(targets, values).at(location)
+      parse_expression_suffix multi, @token.location
+    end
+
     def parse_rescue
       next_token_skip_space
 
