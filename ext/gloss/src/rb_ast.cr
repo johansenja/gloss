@@ -200,7 +200,17 @@ module Rb
       delegate :to_json, to: @info
     end
 
-    class RegexLiteral < NodeWithValue
+    class RegexLiteral < Node
+      @info : NamedTuple(type: String, value: Node)
+
+      def initialize(value)
+        @info = {
+          type:  self.class.name.split("::").last,
+          value: value,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
 
     class Nop < Node

@@ -92,7 +92,7 @@ module Crystal
 
   class RegexLiteral < ASTNode
     def to_rb
-      Rb::AST::RegexLiteral.new("//")
+      Rb::AST::RegexLiteral.new(@value.to_rb)
     end
   end
 
@@ -164,6 +164,12 @@ module Crystal
   class If < ASTNode
     def to_rb
       Rb::AST::If.new(@cond.to_rb, @then.to_rb, @else.to_rb)
+    end
+  end
+
+  class Unless < ASTNode
+    def to_rb
+      Rb::AST::Unless.new(@cond.to_rb, @then.to_rb, @else.to_rb)
     end
   end
 

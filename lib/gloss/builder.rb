@@ -273,6 +273,16 @@ module Gloss
         end
 
         src.write_ln "end)"
+      when "Unless"
+        src.write_ln "unless #{visit_node node[:condition]}"
+        indented(src) { src.write_ln visit_node(node[:then]) }
+
+        if node[:else]
+          src.write_ln "else"
+          indented(src) { src.write_ln visit_node(node[:else]) }
+        end
+
+        src.write_ln "end"
       when "Case"
         src.write "case"
         src.write " #{visit_node(node[:condition]).strip}\n" if node[:condition]
@@ -347,6 +357,9 @@ module Gloss
         src.write_ln "include #{visit_node node[:name]}"
       when "Extend"
         src.write_ln "extend #{visit_node node[:name]}"
+      when "RegexLiteral"
+        contents = visit_node node[:value]
+        src.write Regexp.new(contents.undump).inspect
       when "EmptyNode"
         # pass
       else
