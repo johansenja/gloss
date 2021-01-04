@@ -340,6 +340,10 @@ module Gloss
       when "Proc"
         fn = node[:function]
         src.write "->#{render_args(fn)} { #{visit_node fn[:body]} }"
+      when "Include"
+        src.write_ln "include #{visit_node node[:name]}"
+      when "Extend"
+        src.write_ln "extend #{visit_node node[:name]}"
       when "EmptyNode"
         # pass
       else
