@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+module Gloss
+  class Parser
+    def initialize(@str)
+    end
+
+    def run
+      tree_json = Gloss.parse_buffer(@str)
+      begin
+        JSON.parse tree_json, symbolize_names: true
+      rescue JSON::ParserError
+        # if parsing fails then tree is invalid and most likely an error message from the parser in
+        # crystal
+        raise Errors::ParserError, tree_json
+      end
+    end
+  end
+end
