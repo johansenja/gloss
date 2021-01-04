@@ -392,6 +392,18 @@ module Crystal
     end
   end
 
+  class Include < ASTNode
+    def to_rb
+      Rb::AST::Include.new(@name)
+    end
+  end
+
+  class Extend < ASTNode
+    def to_rb
+      Rb::AST::Extend.new(@name)
+    end
+  end
+
   {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
                          Select ImplicitObj AnnotationDef While Until UninitializedVar
                          ProcPointer Self Yield Include

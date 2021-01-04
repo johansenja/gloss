@@ -532,5 +532,24 @@ module Rb
 
       delegate :to_json, to: @info
     end
+
+    class NodeWithNameNode < Node
+      @info : NamedTuple(type: String, name: Node)
+
+      def initialize(name)
+        @info = {
+          type:  self.class.name.split("::").last,
+          name: name
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class Extend < NodeWithNameNode
+    end
+
+    class Include < NodeWithNameNode
+    end
   end
 end
