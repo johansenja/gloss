@@ -17,10 +17,10 @@ module Gloss
       line = @line_number
       column = @token.column_number
 
-      # next_token_skip_space
-      # next_token_skip_space_or_newline
-      # of = nil
-      Crystal::ArrayLiteral.new([] of Crystal::ASTNode) # .at_end(of)
+      next_token_skip_space
+      next_token_skip_space_or_newline
+      of = nil
+      Crystal::ArrayLiteral.new([] of Crystal::ASTNode).at_end(of)
     end
 
     def new_hash_literal(entries, line, column, end_location, allow_of = true)
