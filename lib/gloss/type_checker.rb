@@ -2,23 +2,19 @@
 
 module Gloss
   class TypeChecker
+    Project = Struct.new :targets
+
     attr_reader :steep_target, :top_level_decls
 
     def initialize
       @steep_target = Steep::Project::Target.new(
         name: "gloss",
         options: Steep::Project::Options.new,
-        source_patterns: ["gloss"],
+        source_patterns: ["gloss.rb"],
         ignore_patterns: [],
-        signature_patterns: []
+        signature_patterns: ["sig"]
       )
       @top_level_decls = {}
-      Dir.glob("sig/**/*.rbs").each do |fp|
-        next if !@steep_target.possible_signature_file?(fp) || @steep_target.signature_file?(fp)
-
-        Steep.logger.info { "Adding signature file: #{fp}" }
-        @steep_target.add_signature path, (Pathname(".") + fp).cleanpath.read
-      end
     end
 
     def run(rb_str)
@@ -52,20 +48,15 @@ module Gloss
       @top_level_decls.each do |_, decl|
         env << decl
       end
-      env = env.resolve_type_names
 
       @steep_target.instance_variable_set("@environment", env)
-      @steep_target.add_source("gloss", rb_str)
+      project = Steep::Project.new(steepfile_path: Pathname(Config.src_dir).realpath)
+      project.targets << @steep_target
+      loader = Steep::Project::FileLoader.new(project: project)
+      loader.load_signatures
 
-      definition_builder = RBS::DefinitionBuilder.new(env: env)
-      factory = Steep::AST::Types::Factory.new(builder: definition_builder)
-      check = Steep::Subtyping::Check.new(factory: factory)
-      validator = Steep::Signature::Validator.new(checker: check)
-      validator.validate
-
-      raise Errors::TypeValidationError, validator.each_error.to_a.join("\n") unless validator.no_error?
-
-      @steep_target.run_type_check(env, check, Time.now)
+      @steep_target.add_source("gloss.rb", p(rb_str))
+      @steep_target.type_check
 
       @steep_target.status.is_a?(Steep::Project::Target::TypeCheckStatus) &&
         @steep_target.no_error? &&

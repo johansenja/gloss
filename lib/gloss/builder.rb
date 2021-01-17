@@ -60,6 +60,9 @@ module Gloss
         src.write_ln "end"
 
         @current_scope = old_parent_scope
+
+        @current_scope.members << class_type if @current_scope
+
         if @type_checker
           @type_checker.top_level_decls[class_type.name.name] = class_type unless @current_scope
         end
@@ -87,6 +90,9 @@ module Gloss
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         @current_scope = old_parent_scope
+
+        @current_scope.members << module_type if @current_scope
+
         if @type_checker
           @type_checker.top_level_decls[module_type.name.name] = module_type unless @current_scope
         end
@@ -112,12 +118,17 @@ module Gloss
           RBS::MethodType.new(
             type_params: [],
             type: RBS::Types::Function.new(
-              required_positionals: [],
-              optional_positionals: [],
-              rest_positionals: nil,
+              required_positionals: node[:rp_args]&.map do |a|
+                RBS::Types::Function::Param.new(
+                  name: visit_node(a).to_sym,
+                  type: RBS::Types::Bases::Any.new(location: nil)
+                )
+              end || EMPTY_ARRAY,
+              optional_positionals: node[:op_args] || EMPTY_ARRAY,
+              rest_positionals: node[:rest_p_args],
               trailing_positionals: [],
-              required_keywords: {},
-              optional_keywords: {},
+              required_keywords: node[:req_kw_args] || EMPTY_HASH,
+              optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
               rest_keywords: node[:rest_kw_args] ?
                 RBS::Types::Function::Param.new(
                   name: visit_node(node[:rest_kw_args]).to_sym,
