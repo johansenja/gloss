@@ -20,6 +20,7 @@ module Gloss
           tree_hash = Parser.new(content).run
           type_checker = TypeChecker.new
           rb_output = Builder.new(tree_hash, type_checker).run
+          type_checker.run(rb_output)
 
           puts "=====> Writing #{fp}"
           Writer.new(rb_output, fp).run
