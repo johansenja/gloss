@@ -62,7 +62,7 @@ module Crystal
 
   class SymbolLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(":#{@value.to_s}", Rb::AST::RbLiteral::Symbol)
+      Rb::AST::LiteralNode.new(%{:"#{@value.to_s}"}, Rb::AST::RbLiteral::Symbol)
     end
   end
 
