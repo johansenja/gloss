@@ -416,7 +416,20 @@ module Crystal
     end
   end
 
-  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier IsA RespondsTo
+  class IsA < ASTNode
+    def to_rb
+      Rb::AST::Call.new(
+        @obj.to_rb,
+        "is_a?",
+        [@const.to_rb],
+        nil,
+        nil,
+        nil
+      )
+    end
+  end
+
+  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier  RespondsTo
                          Select ImplicitObj AnnotationDef While Until UninitializedVar
                          ProcPointer Self Yield LibDef FunDef TypeDef CStructOrUnionDef
                          ExternalVar Alias Metaclass Cast NilableCast TypeOf Annotation
