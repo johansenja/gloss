@@ -101,4 +101,24 @@ module Gloss
       end
     GLS
   end
+
+  it "allows constant methods" do
+    Gloss.parse_string(<<-GLS).should be_truthy
+      def Hello(arg = nil)
+      end
+
+      Hello()
+
+      Hello("a")
+    GLS
+  end
+
+  it "requires constant methods to be called with ()" do
+    Gloss.parse_string(<<-GLS).should be_falsey
+      def Hello(arg = nil)
+      end
+
+      Hello
+    GLS
+  end
 end
