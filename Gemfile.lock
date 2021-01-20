@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    gloss (0.0.2)
+    gloss (0.0.3)
       fast_blank
       listen
       rbs
