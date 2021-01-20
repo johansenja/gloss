@@ -29,24 +29,39 @@ module Gloss
       case node[:type]
       when "ClassNode"
         class_name = visit_node(node[:name])
-        superclass = if node[:superclass]
-                       @eval_vars = true
-                       visit_node(node[:superclass])
-                       @eval_vars = false
-                     else
-                       nil
-                     end
-
-        src.write_ln "class #{class_name}#{" < #{superclass}" if superclass}"
-
         current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
+        superclass_type = nil
+        superclass_output = nil
+        if node[:superclass]
+          @eval_vars = true
+          superclass_output = visit_node(node[:superclass])
+          @eval_vars = false
+          ns = if superclass_output.start_with? '::'
+                 RBS::Namespace.root
+               elsif superclass_output.include? '::'
+                 current_namespace
+               else
+                 RBS::Namespace.empty
+               end
+          superclass_type = RBS::AST::Declarations::Class::Super.new(
+            name: RBS::TypeName.new(
+              name: superclass_output.to_sym,
+              namespace: ns
+            ),
+            args: [],
+            location: nil
+          )
+        end
+
+        src.write_ln "class #{class_name}#{" < #{superclass_output}" if superclass_output}"
+
         class_type = RBS::AST::Declarations::Class.new(
           name: RBS::TypeName.new(
             namespace: current_namespace,
             name: class_name.to_sym
           ),
           type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
-          super_class: superclass ? RBS::AST::Declarations::Class::Super.new(name: RBS::Typename.new(name: super_class.to_sym, namespace: RBS::Namespace.root), args: [], location: nil) : nil,
+          super_class: superclass_type,
           members: [],
           annotations: [],
           location: node[:location],
@@ -70,7 +85,7 @@ module Gloss
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
 
-        current_namespace = RBS::Namespace.root # RBS::Namespace.new(path: [module_name.to_sym], absolute: false)
+        current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
 
         module_type = RBS::AST::Declarations::Module.new(
           name: RBS::TypeName.new(

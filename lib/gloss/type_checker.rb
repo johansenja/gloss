@@ -40,10 +40,6 @@ true
     def check_types(rb_str)
       env_loader = RBS::EnvironmentLoader.new
       env = RBS::Environment.from_loader(env_loader)
-      @top_level_decls.each { |_, decl|
-        env.<<(decl)
-      }
-      @steep_target.instance_variable_set("@environment", env)
       project = Steep::Project.new(steepfile_path:       Pathname.new(Config.src_dir)
 .realpath)
       project.targets
@@ -51,6 +47,11 @@ true
       loader = Steep::Project::FileLoader.new(project: project)
       loader.load_signatures
       @steep_target.add_source("gloss.rb", rb_str)
+      @top_level_decls.each { |_, decl|
+        env.<<(decl)
+      }
+      env = env.resolve_type_names
+      @steep_target.instance_variable_set("@environment", env)
       @steep_target.type_check
 @steep_target.status
 .is_a?(Steep::Project::Target::TypeCheckStatus) && @steep_target.no_error? && @steep_target.errors
