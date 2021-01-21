@@ -36,21 +36,10 @@ module Gloss
           @eval_vars = true
           superclass_output = visit_node(node[:superclass])
           @eval_vars = false
-          ns = if superclass_output.start_with? '::'
-                 RBS::Namespace.root
-               elsif superclass_output.include? '::'
-                 current_namespace
-               else
-                 RBS::Namespace.empty
-               end
-          superclass_type = RBS::AST::Declarations::Class::Super.new(
-            name: RBS::TypeName.new(
-              name: superclass_output.to_sym,
-              namespace: ns
-            ),
-            args: [],
-            location: nil
-          )
+          superclass_type = RBS::Parser.parse_type superclass_output
+          if node.dig(:superclass, :type) == "Generic"
+            superclass_output = superclass_output[/^[^\[]+/]
+          end
         end
 
         src.write_ln "class #{class_name}#{" < #{superclass_output}" if superclass_output}"
@@ -380,7 +369,7 @@ module Gloss
           end
         src.write_ln "end"
       when "Generic"
-        src.write "#{node[:name]}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
+        src.write "#{visit_node(node[:name])}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
       when "Proc"
         fn = node[:function]
         src.write "->#{render_args(fn)} { #{visit_node fn[:body]} }"
