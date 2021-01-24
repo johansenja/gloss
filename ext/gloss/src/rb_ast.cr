@@ -95,9 +95,9 @@ module Rb
 
     class DefNode < Node
       @info : NamedTuple(type: String, name: String, body: Node, rp_args: Array(Arg), receiver: Node?,
-        return_type: Node?, rest_kw_args: Arg?)
+        return_type: Node?, rest_kw_args: Arg?, rest_p_args: Arg?)
 
-      def initialize(name : String, rp_args : Array(Arg), body : Node, receiver : Node?, return_type : Node?, rest_kw_args)
+      def initialize(name : String, rp_args : Array(Arg), body : Node, receiver : Node?, return_type : Node?, splat, rest_kw_args)
         @info = {
           type:         self.class.name.split("::").last,
           name:         name,
@@ -106,6 +106,7 @@ module Rb
           rest_kw_args: rest_kw_args,
           receiver:     receiver,
           return_type:  return_type,
+          rest_p_args:  splat,
         }
       end
 
@@ -124,7 +125,7 @@ module Rb
           restriction:   restriction,
           value: value,
           external_name: external_name,
-          keyword_arg: keyword_arg
+          keyword_arg: keyword_arg,
         }
       end
 
@@ -319,9 +320,10 @@ module Rb
 
     class Call < Node
       @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block:
-      Block?, block_arg: Node?, named_args: Array(Arg)?)
+      Block?, block_arg: Node?, named_args: Array(Arg)?, has_parentheses: Bool)
 
-      def initialize(object : Node?, name : String, args : Array(Node), named_args, block, block_arg)
+      def initialize(object : Node?, name : String, args : Array(Node), named_args, block,
+          block_arg, has_parentheses)
         @info = {
           type:      self.class.name.split("::").last,
           name:      name,
@@ -330,6 +332,7 @@ module Rb
           block:     block,
           block_arg: block_arg,
           named_args: named_args,
+          has_parentheses: has_parentheses || false
         }
       end
 

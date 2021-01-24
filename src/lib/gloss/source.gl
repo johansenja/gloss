@@ -2,22 +2,22 @@
 
 module Gloss
   class Source < String
-    def initialize(indent_level)
+    def initialize(@indent_level)
       super()
-      @indent_level = indent_level
     end
 
-    def write(*args)
+    def write(*args : String)
       args.each do |a|
         self << a
       end
+      self
     end
 
-    def write_indnt(*args)
+    def write_indnt(*args : String)
       write(*args.map { |a| "#{("  " * @indent_level)}#{a}" })
     end
 
-    def write_ln(*args)
+    def write_ln(*args : String)
       write_indnt(*args.map { |a| a.strip << "\n" })
     end
 

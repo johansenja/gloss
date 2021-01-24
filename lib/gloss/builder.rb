@@ -129,7 +129,7 @@ module Gloss
                 )
               end || EMPTY_ARRAY,
               optional_positionals: node[:op_args] || EMPTY_ARRAY,
-              rest_positionals: node[:rest_p_args],
+              rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: nil)) : nil,
               trailing_positionals: [],
               required_keywords: node[:req_kw_args] || EMPTY_HASH,
               optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
@@ -170,12 +170,19 @@ module Gloss
         args = node[:args] || EMPTY_ARRAY
         args += node[:named_args] if node[:named_args]
         args = if !args.empty? || node[:block_arg]
-                 "(#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]})"
+                 "#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]}"
                else
                  nil
                end
         block = node[:block] ? " #{visit_node(node[:block])}" : nil
-        src.write_ln "#{obj}#{node[:name]}#{args}#{block}"
+        opening_delimiter = if node[:has_parentheses]
+                              "("
+                            elsif args
+                              " "
+                            else
+                              nil
+                            end
+        src.write_ln "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if node[:has_parentheses]}#{block}"
 
       when "Block"
 
@@ -418,7 +425,7 @@ module Gloss
       op = node[:op_args] || EMPTY_ARRAY
       rkw = node[:req_kw_args] || EMPTY_HASH
       okw = node[:opt_kw_args] || EMPTY_HASH
-      rest_p = node[:rest_p_args]
+      rest_p = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
       rest_kw = node[:rest_kw_args]
       return nil unless [rp, op, rkw, okw, rest_p, rest_kw].any? { |a| !a.nil? || !a.empty? }
 

@@ -104,8 +104,17 @@ module Crystal
 
   class Def < ASTNode
     def to_rb
-      Rb::AST::DefNode.new(@name, @args.map(&.to_rb), @body.to_rb, receiver.try(&.to_rb),
-        return_type.try(&.to_rb), @double_splat.try(&.to_rb))
+      required_args = args.dup
+      splat = @splat_index ? required_args.delete_at(@splat_index.as(Int32)) : nil
+      Rb::AST::DefNode.new(
+        @name,
+        required_args.map(&.to_rb),
+        @body.to_rb,
+        receiver.try(&.to_rb),
+        return_type.try(&.to_rb),
+        splat.try(&.to_rb),
+        @double_splat.try(&.to_rb)
+      )
     end
   end
 
@@ -141,7 +150,8 @@ module Crystal
         @args.map(&.to_rb),
         @named_args.try(&.map(&.to_rb.as(Rb::AST::Arg))),
         @block.try(&.to_rb),
-        @block_arg.try(&.to_rb)
+        @block_arg.try(&.to_rb),
+        @has_parentheses
       )
     end
   end
@@ -424,12 +434,13 @@ module Crystal
         [@const.to_rb],
         nil,
         nil,
-        nil
+        nil,
+        false
       )
     end
   end
 
-  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier  RespondsTo
+  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier RespondsTo
                          Select ImplicitObj AnnotationDef While Until UninitializedVar
                          ProcPointer Self Yield LibDef FunDef TypeDef CStructOrUnionDef
                          ExternalVar Alias Metaclass Cast NilableCast TypeOf Annotation
@@ -441,7 +452,7 @@ module Crystal
     end
   {% end %}
 
-  {% for class_name in %w[PointerOf SizeOf InstanceSizeOf Out MacroVerbatim DoubleSplat] %}
+  {% for class_name in %w[PointerOf SizeOf InstanceSizeOf Out MacroVerbatim] %}
     class {{class_name.id}} < UnaryExpression
       def to_rb
         Rb::AST::EmptyNode.new(self.class.name)
