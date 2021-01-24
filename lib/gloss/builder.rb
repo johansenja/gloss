@@ -36,21 +36,10 @@ module Gloss
           @eval_vars = true
           superclass_output = visit_node(node[:superclass])
           @eval_vars = false
-          ns = if superclass_output.start_with? '::'
-                 RBS::Namespace.root
-               elsif superclass_output.include? '::'
-                 current_namespace
-               else
-                 RBS::Namespace.empty
-               end
-          superclass_type = RBS::AST::Declarations::Class::Super.new(
-            name: RBS::TypeName.new(
-              name: superclass_output.to_sym,
-              namespace: ns
-            ),
-            args: [],
-            location: nil
-          )
+          superclass_type = RBS::Parser.parse_type superclass_output
+          if node.dig(:superclass, :type) == "Generic"
+            superclass_output = superclass_output[/^[^\[]+/]
+          end
         end
 
         src.write_ln "class #{class_name}#{" < #{superclass_output}" if superclass_output}"
@@ -140,7 +129,7 @@ module Gloss
                 )
               end || EMPTY_ARRAY,
               optional_positionals: node[:op_args] || EMPTY_ARRAY,
-              rest_positionals: node[:rest_p_args],
+              rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: nil)) : nil,
               trailing_positionals: [],
               required_keywords: node[:req_kw_args] || EMPTY_HASH,
               optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
@@ -181,12 +170,19 @@ module Gloss
         args = node[:args] || EMPTY_ARRAY
         args += node[:named_args] if node[:named_args]
         args = if !args.empty? || node[:block_arg]
-                 "(#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]})"
+                 "#{args.map { |a| visit_node(a, scope).strip }.reject(&:blank?).join(", ")}#{"&#{visit_node(node[:block_arg]).strip}" if node[:block_arg]}"
                else
                  nil
                end
         block = node[:block] ? " #{visit_node(node[:block])}" : nil
-        src.write_ln "#{obj}#{node[:name]}#{args}#{block}"
+        opening_delimiter = if node[:has_parentheses]
+                              "("
+                            elsif args
+                              " "
+                            else
+                              nil
+                            end
+        src.write_ln "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if node[:has_parentheses]}#{block}"
 
       when "Block"
 
@@ -380,7 +376,7 @@ module Gloss
           end
         src.write_ln "end"
       when "Generic"
-        src.write "#{node[:name]}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
+        src.write "#{visit_node(node[:name])}[#{node[:args].map { |a| visit_node a }.join(", ")}]"
       when "Proc"
         fn = node[:function]
         src.write "->#{render_args(fn)} { #{visit_node fn[:body]} }"
@@ -429,7 +425,7 @@ module Gloss
       op = node[:op_args] || EMPTY_ARRAY
       rkw = node[:req_kw_args] || EMPTY_HASH
       okw = node[:opt_kw_args] || EMPTY_HASH
-      rest_p = node[:rest_p_args]
+      rest_p = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
       rest_kw = node[:rest_kw_args]
       return nil unless [rp, op, rkw, okw, rest_p, rest_kw].any? { |a| !a.nil? || !a.empty? }
 

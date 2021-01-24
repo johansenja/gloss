@@ -5,8 +5,8 @@
 
 module Gloss
   class TypeChecker
-    Project = Struct.new(:targets)
-    attr_reader(:steep_target, :top_level_decls)
+    Project = Struct.new(:"targets")
+    attr_reader(:"steep_target", :"top_level_decls")
     def initialize()
       @steep_target = Steep::Project::Target.new(name: "gloss", options:       Steep::Project::Options.new
 .tap { |o|
@@ -26,7 +26,10 @@ case e
             when Steep::Errors::MethodBodyTypeMismatch
               "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Errors::IncompatibleArguments
-              "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
+              "  Invalid argmuents - method type: #{e.method_type}\n                      method name: #{e.method_type
+.method_decls
+.first
+.method_name}"
             when Steep::Errors::ReturnTypeMismatch
               "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Errors::IncompatibleAssignment

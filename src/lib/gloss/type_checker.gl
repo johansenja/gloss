@@ -29,7 +29,10 @@ module Gloss
                 when Steep::Errors::MethodBodyTypeMismatch
                   "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
                 when Steep::Errors::IncompatibleArguments
-                  "Invalid argmuents - method type: #{e.method_type}, receiver type: #{e.receiver_type}"
+                  <<-ERR
+                    Invalid argmuents - method type: #{e.method_type}
+                                        method name: #{e.method_type.method_decls.first.method_name}
+                  ERR
                 when Steep::Errors::ReturnTypeMismatch
                   "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
                 when Steep::Errors::IncompatibleAssignment

@@ -1,0 +1,32 @@
+# frozen_string_literal: true
+
+module Gloss
+  class Source < String
+    def initialize(@indent_level)
+      super()
+    end
+
+    def write(*args : String)
+      args.each do |a|
+        self << a
+      end
+      self
+    end
+
+    def write_indnt(*args : String)
+      write(*args.map { |a| "#{("  " * @indent_level)}#{a}" })
+    end
+
+    def write_ln(*args : String)
+      write_indnt(*args.map { |a| a.strip << "\n" })
+    end
+
+    def increment_indent
+      @indent_level += 1
+    end
+
+    def decrement_indent
+      @indent_level -= 1
+    end
+  end
+end
