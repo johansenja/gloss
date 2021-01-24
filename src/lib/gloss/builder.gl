@@ -51,8 +51,8 @@ module Gloss
           ),
           type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
           super_class: superclass_type,
-          members: Array.new,
-          annotations: Array.new,
+          members: EMPTY_ARRAY, # TODO
+          annotations: EMPTY_ARRAY, # TODO
           location: node[:location],
           comment: node[:comment]
         )
@@ -82,9 +82,9 @@ module Gloss
             name: module_name.to_sym
           ),
           type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
-          self_types: [],
-          members: [],
-          annotations: [],
+          self_types: EMPTY_ARRAY, # TODO
+          members: EMPTY_ARRAY, # TODO
+          annotations: EMPTY_ARRAY, # TODO
           location: node[:location],
           comment: node[:comment]
         )
@@ -111,7 +111,7 @@ module Gloss
                             name: eval(visit_node(node[:return_type])).to_s.to_sym,
                             namespace: RBS::Namespace.root
                           ),
-                          args: [],
+                          args: EMPTY_ARRAY, # TODO
                           location: nil
                         )
                       else
@@ -120,7 +120,7 @@ module Gloss
 
         method_types = [
           RBS::MethodType.new(
-            type_params: [],
+            type_params: EMPTY_ARRAY, # TODO
             type: RBS::Types::Function.new(
               required_positionals: node[:rp_args]&.map do |a|
                 RBS::Types::Function::Param.new(
@@ -130,7 +130,7 @@ module Gloss
               end || EMPTY_ARRAY,
               optional_positionals: node[:op_args] || EMPTY_ARRAY,
               rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: nil)) : nil,
-              trailing_positionals: [],
+              trailing_positionals: EMPTY_ARRAY, # TODO
               required_keywords: node[:req_kw_args] || EMPTY_HASH,
               optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
               rest_keywords: node[:rest_kw_args] ?
@@ -148,7 +148,7 @@ module Gloss
           name: node[:name].to_sym,
           kind: :instance,
           types: method_types,
-          annotations: [],
+          annotations: EMPTY_ARRAY, # TODO
           location: node[:location],
           comment: node[:comment],
           overload: false
@@ -175,13 +175,14 @@ module Gloss
                  nil
                end
         block = node[:block] ? " #{visit_node(node[:block])}" : nil
-        has_parens = !!(node[:has_parentheses] || args || block)
-        opening_delimiter = if has_parens
+        opening_delimiter = if node[:has_parentheses]
                               "("
+                            elsif args
+                              " "
                             else
                               nil
                             end
-        src.write_ln "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
+        src.write_ln "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if node[:has_parentheses]}#{block}"
 
       when "Block"
 
