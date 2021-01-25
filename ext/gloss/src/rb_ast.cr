@@ -94,19 +94,27 @@ module Rb
     end
 
     class DefNode < Node
-      @info : NamedTuple(type: String, name: String, body: Node, rp_args: Array(Arg), receiver: Node?,
+      @info : NamedTuple(type: String, name: String, body: Node, positional_args: Array(Arg), receiver: Node?,
         return_type: Node?, rest_kw_args: Arg?, rest_p_args: Arg?)
 
-      def initialize(name : String, rp_args : Array(Arg), body : Node, receiver : Node?, return_type : Node?, splat, rest_kw_args)
+      def initialize(
+        receiver : Node?,
+        name : String,
+        positional_args : Array(Arg),
+        splat,
+        rest_kw_args,
+        body : Node,
+        return_type : Node?
+      )
         @info = {
-          type:         self.class.name.split("::").last,
-          name:         name,
-          body:         body,
-          rp_args:      rp_args,
-          rest_kw_args: rest_kw_args,
-          receiver:     receiver,
-          return_type:  return_type,
-          rest_p_args:  splat,
+          type:            self.class.name.split("::").last,
+          name:            name,
+          body:            body,
+          positional_args: positional_args,
+          rest_kw_args:    rest_kw_args,
+          receiver:        receiver,
+          return_type:     return_type,
+          rest_p_args:     splat,
         }
       end
 
@@ -117,15 +125,14 @@ module Rb
       @info : NamedTuple(type: String, name: String, external_name: String, value: Node?,
         restriction: Node?, keyword_arg: Bool)
 
-      def initialize(name : String, external_name : String, restriction : Node?, value :
-          Node?, keyword_arg)
+      def initialize(name : String, external_name : String, restriction : Node?, value : Node?, keyword_arg)
         @info = {
           type:          self.class.name.split("::").last,
           name:          name,
           restriction:   restriction,
-          value: value,
+          value:         value,
           external_name: external_name,
-          keyword_arg: keyword_arg,
+          keyword_arg:   keyword_arg,
         }
       end
 
@@ -319,20 +326,19 @@ module Rb
     end
 
     class Call < Node
-      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block:
-      Block?, block_arg: Node?, named_args: Array(Arg)?, has_parentheses: Bool)
+      @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?, block_arg: Node?, named_args: Array(Arg)?, has_parentheses: Bool)
 
       def initialize(object : Node?, name : String, args : Array(Node), named_args, block,
-          block_arg, has_parentheses)
+                     block_arg, has_parentheses)
         @info = {
-          type:      self.class.name.split("::").last,
-          name:      name,
-          args:      args,
-          object:    object,
-          block:     block,
-          block_arg: block_arg,
-          named_args: named_args,
-          has_parentheses: has_parentheses || false
+          type:            self.class.name.split("::").last,
+          name:            name,
+          args:            args,
+          object:          object,
+          block:           block,
+          block_arg:       block_arg,
+          named_args:      named_args,
+          has_parentheses: has_parentheses || false,
         }
       end
 
@@ -397,6 +403,20 @@ module Rb
           target: target,
           op:     op,
           value:  value,
+        }
+      end
+
+      delegate :to_json, to: @info
+    end
+
+    class MultiAssign < Node
+      @info : NamedTuple(type: String, targets: Array(Node), values: Array(Node))
+
+      def initialize(targets, values)
+        @info = {
+          type:    self.class.name.split("::").last,
+          targets: targets,
+          values:  values,
         }
       end
 
@@ -514,7 +534,7 @@ module Rb
       def initialize(types)
         @info = {
           type:  self.class.name.split("::").last,
-          types: types
+          types: types,
         }
       end
 
@@ -526,9 +546,9 @@ module Rb
 
       def initialize(name, args)
         @info = {
-          type:  self.class.name.split("::").last,
+          type: self.class.name.split("::").last,
           name: name,
-          args: args
+          args: args,
         }
       end
 
@@ -540,8 +560,8 @@ module Rb
 
       def initialize(function)
         @info = {
-          type:  self.class.name.split("::").last,
-          function: function
+          type:     self.class.name.split("::").last,
+          function: function,
         }
       end
 
@@ -553,8 +573,8 @@ module Rb
 
       def initialize(name)
         @info = {
-          type:  self.class.name.split("::").last,
-          name: name
+          type: self.class.name.split("::").last,
+          name: name,
         }
       end
 
@@ -565,6 +585,28 @@ module Rb
     end
 
     class Include < NodeWithNameNode
+    end
+
+    class VisibilityModifier < Node
+      @info : NamedTuple(type: String, visibility: String, exp: Node)
+
+      def initialize(visibility : Crystal::Visibility, exp : Node)
+        vis = case visibility
+              when Crystal::Visibility::Public
+                "public"
+              when Crystal::Visibility::Protected
+                "protected"
+              when Crystal::Visibility::Private
+                "private"
+              end
+        @info = {
+          type:       self.class.name.split("::").last,
+          visibility: vis.as(String),
+          exp:        exp,
+        }
+      end
+
+      delegate :to_json, to: @info
     end
   end
 end

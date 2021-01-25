@@ -1,4 +1,5 @@
-require "./lib/cr_ruby"
+require "../lib/cr_ruby"
+require "../lib/rbs_types"
 require "./cr_ast"
 require "./rb_ast"
 require "./parser"

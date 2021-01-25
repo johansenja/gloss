@@ -9,15 +9,16 @@ module Gloss
     attr_reader(:"steep_target", :"top_level_decls")
     def initialize()
       @steep_target = Steep::Project::Target.new(name: "gloss", options:       Steep::Project::Options.new
-.tap { |o|
+.tap() { |o|
         o.allow_unknown_constant_assignment=(true)
       }, source_patterns: ["gloss.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
       @top_level_decls = {}
     end
     def run(rb_str)
+      puts rb_str
       unless       check_types(rb_str)
         raise(Errors::TypeError, @steep_target.errors
-.map { |e|
+.map() { |e|
 case e
             when Steep::Errors::NoMethod
               "Unknown method :#{e.method}, location: #{e.type
@@ -34,6 +35,8 @@ case e
               "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Errors::IncompatibleAssignment
               "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
+            else
+              e.inspect
           end
         }
 .join("\n"))
@@ -50,7 +53,7 @@ true
       loader = Steep::Project::FileLoader.new(project: project)
       loader.load_signatures
       @steep_target.add_source("gloss.rb", rb_str)
-      @top_level_decls.each { |_, decl|
+      @top_level_decls.each() { |_, decl|
         env.<<(decl)
       }
       env = env.resolve_type_names

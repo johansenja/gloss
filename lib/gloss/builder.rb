@@ -112,36 +112,43 @@ module Gloss
                             namespace: RBS::Namespace.root
                           ),
                           args: [],
-                          location: nil
+                          location: node[:location]
                         )
                       else
-                        RBS::Types::Bases::Any.new(location: nil)
+                        RBS::Types::Bases::Any.new(location:node[:location])
                       end
+        rp = (node[:positional_args] || EMPTY_ARRAY).filter { |a| !a[:value] }
+        op = (node[:positional_args] || EMPTY_ARRAY).filter { |a| a[:value] }
 
         method_types = [
           RBS::MethodType.new(
             type_params: [],
             type: RBS::Types::Function.new(
-              required_positionals: node[:rp_args]&.map do |a|
+              required_positionals: rp.map do |a|
                 RBS::Types::Function::Param.new(
                   name: visit_node(a).to_sym,
-                  type: RBS::Types::Bases::Any.new(location: nil)
+                  type: RBS::Types::Bases::Any.new(location: a[:location])
                 )
-              end || EMPTY_ARRAY,
-              optional_positionals: node[:op_args] || EMPTY_ARRAY,
-              rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: nil)) : nil,
+              end,
+              optional_positionals: op.map do |a|
+                RBS::Types::Function::Param.new(
+                  name: visit_node(a).to_sym,
+                  type: RBS::Types::Bases::Any.new(location: a[:location])
+                )
+              end,
+              rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: node[:location])) : nil,
               trailing_positionals: [],
               required_keywords: node[:req_kw_args] || EMPTY_HASH,
               optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
               rest_keywords: node[:rest_kw_args] ?
                 RBS::Types::Function::Param.new(
                   name: visit_node(node[:rest_kw_args]).to_sym,
-                  type: RBS::Types::Bases::Any.new(location: nil)
+                  type: RBS::Types::Bases::Any.new(location: node[:location])
                 ) : nil,
               return_type: return_type
             ),
             block: nil,
-            location: nil
+            location: node[:location]
           )
         ]
         method_definition = RBS::AST::Members::MethodDefinition.new(
@@ -163,6 +170,11 @@ module Gloss
         indented(src) { src.write_ln visit_node(node[:body]) if node[:body] }
 
         src.write_ln "end"
+
+      when "VisibilityModifier"
+
+        src.write_ln "#{node[:visibility]} #{visit_node(node[:exp])}"
+
       when "CollectionNode"
         src.write(*node[:children].map { |a| visit_node(a, scope) })
       when "Call"
@@ -181,7 +193,8 @@ module Gloss
                             else
                               nil
                             end
-        src.write_ln "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
+        call = "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
+        node[:object] ? src.write(call) : src.write_ln(call)
 
       when "Block"
 
@@ -204,7 +217,7 @@ module Gloss
 
       when "ArrayLiteral"
 
-        src.write("[", *node[:elements].map { |e| visit_node e }.join(", "), "]")
+        src.write("[", *node[:elements].map { |e| visit_node(e).strip }.join(", "), "]")
         src.write ".freeze" if node[:frozen]
 
       when "StringInterpolation"
@@ -230,6 +243,10 @@ module Gloss
       when "Assign", "OpAssign"
 
         src.write_ln "#{visit_node(node[:target])} #{node[:op]}= #{visit_node(node[:value]).strip}"
+
+      when "MultiAssign"
+
+        src.write_ln "#{node[:targets].map{ |t| visit_node(t).strip }.join(", ")} = #{node[:values].map { |v| visit_node(v).strip }.join(", ")}"
 
       when "Var"
 
@@ -316,12 +333,18 @@ module Gloss
           node[:whens].each do |w|
             src.write_ln visit_node(w)
           end
+          if node[:else]
+            src.write_ln "else"
+            indented(src) do
+              src.write_ln visit_node(node[:else])
+            end
+          end
         end
         src.write_ln "end"
       when "When"
         src.write_ln "when #{node[:conditions].map { |n| visit_node(n) }.join(", ")}"
 
-        indented(src) { src.write_ln visit_node(node[:body]) }
+        indented(src) { src.write_ln(node[:body] ? visit_node(node[:body]) : "# no op") }
       when "MacroFor"
         vars, expr, body = node[:vars], node[:expr], node[:body]
         var_names = vars.map { |v| visit_node v }
@@ -371,7 +394,7 @@ module Gloss
           end
           if node[:ensure]
             src.write_ln "ensure"
-            intended(src) { src.write_ln visit_node(node[:ensure]) }
+            indented(src) { src.write_ln visit_node(node[:ensure]) }
           end
         src.write_ln "end"
       when "Generic"
@@ -420,8 +443,8 @@ module Gloss
     end
 
     def render_args(node)
-      rp = node[:rp_args] || EMPTY_ARRAY
-      op = node[:op_args] || EMPTY_ARRAY
+      rp = (node[:positional_args] || EMPTY_ARRAY).filter { |a| !a[:value] }
+      op = (node[:positional_args] || EMPTY_ARRAY).filter { |a| a[:value] }
       rkw = node[:req_kw_args] || EMPTY_HASH
       okw = node[:opt_kw_args] || EMPTY_HASH
       rest_p = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
@@ -430,7 +453,7 @@ module Gloss
 
       contents = [
         rp.map { |a| visit_node(a) },
-        op.map { |pos| "#{pos.name} = #{value}" },
+        op.map { |a| "#{a[:name]} = #{visit_node(a[:value]).strip}" },
         rkw.map { |name, _| "#{name}:" },
         okw.map { |name, _| "#{name}: #{value}" },
         rest_p ? "*#{rest_p}" : "",
