@@ -147,7 +147,20 @@ module Gloss
                 ) : nil,
               return_type: return_type
             ),
-            block: nil,
+            block: node[:yield_arg_count] ?
+              RBS::Types::Block.new(
+                type: RBS::Types::Function.new(
+                  required_positionals: [],
+                  optional_positionals: [],
+                  rest_positionals: nil,
+                  trailing_positionals: [],
+                  required_keywords: {},
+                  optional_keywords: Hash.new,
+                  rest_keywords: nil,
+                  return_type: RBS::Types::Bases::Any.new(location: node[:location])
+                ),
+                required: !!(node[:block_arg] || node[:yield_arg_count])
+              ) : nil,
             location: node[:location]
           )
         ]
@@ -194,7 +207,7 @@ module Gloss
                               nil
                             end
         call = "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
-        node[:object] ? src.write(call) : src.write_ln(call)
+        node.dig(:object, :type) == "Call" ? src.write(call) : src.write_ln(call)
 
       when "Block"
 
@@ -227,7 +240,7 @@ module Gloss
                  when "LiteralNode"
                    c[:value][1...-1]
                  else
-                   "\#{#{visit_node(c).strip}}"
+                   [%q|#{|, visit_node(c).strip, "}"].join
                  end
         end
         src.write '"', contents, '"'
@@ -409,6 +422,14 @@ module Gloss
       when "RegexLiteral"
         contents = visit_node node[:value]
         src.write Regexp.new(contents.undump).inspect
+      when "Union"
+        types = node[:types]
+        output = if types.length == 2 && types[1][:type] == "Path" && types[1]["value"] == nil
+                  "#{visit_node(types[0])}?"
+                 else
+                   types.map { |t| visit_node(t) }.join(" | ")
+                 end
+        src.write output
       when "EmptyNode"
         # pass
       else
@@ -443,10 +464,10 @@ module Gloss
     end
 
     def render_args(node)
-      rp = (node[:positional_args] || EMPTY_ARRAY).filter { |a| !a[:value] }
-      op = (node[:positional_args] || EMPTY_ARRAY).filter { |a| a[:value] }
-      rkw = node[:req_kw_args] || EMPTY_HASH
-      okw = node[:opt_kw_args] || EMPTY_HASH
+      rp = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| !a[:value] }
+      op = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| a[:value] }
+      rkw = node.fetch(:req_kw_args) { EMPTY_HASH }
+      okw = node.fetch(:opt_kw_args) { EMPTY_HASH }
       rest_p = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
       rest_kw = node[:rest_kw_args]
       return nil unless [rp, op, rkw, okw, rest_p, rest_kw].any? { |a| !a.nil? || !a.empty? }
@@ -455,7 +476,7 @@ module Gloss
         rp.map { |a| visit_node(a) },
         op.map { |a| "#{a[:name]} = #{visit_node(a[:value]).strip}" },
         rkw.map { |name, _| "#{name}:" },
-        okw.map { |name, _| "#{name}: #{value}" },
+        okw.map { |name, value| "#{name}: #{value}" },
         rest_p ? "*#{rest_p}" : "",
         rest_kw ? "**#{visit_node(rest_kw)}" : ""
       ].reject(&:empty?).flatten.join(", ")

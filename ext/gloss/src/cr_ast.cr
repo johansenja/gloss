@@ -114,6 +114,8 @@ module Crystal
         @double_splat.try(&.to_rb),
         @body.to_rb,
         return_type.try(&.to_rb),
+        @yields,
+        @block_arg.try &.to_rb
       )
     end
   end

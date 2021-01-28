@@ -95,7 +95,7 @@ module Rb
 
     class DefNode < Node
       @info : NamedTuple(type: String, name: String, body: Node, positional_args: Array(Arg), receiver: Node?,
-        return_type: Node?, rest_kw_args: Arg?, rest_p_args: Arg?)
+        return_type: Node?, rest_kw_args: Arg?, rest_p_args: Arg?, block_arg: Node?, yield_arg_count: Int32?)
 
       def initialize(
         receiver : Node?,
@@ -104,7 +104,9 @@ module Rb
         splat,
         rest_kw_args,
         body : Node,
-        return_type : Node?
+        return_type : Node?,
+        yields : Int32?,
+        block_arg : Node?
       )
         @info = {
           type:            self.class.name.split("::").last,
@@ -115,6 +117,8 @@ module Rb
           receiver:        receiver,
           return_type:     return_type,
           rest_p_args:     splat,
+          yield_arg_count: yields,
+          block_arg: block_arg
         }
       end
 
