@@ -53,8 +53,8 @@ module Gloss
           ),
           type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
           super_class: superclass_type,
-          members: EMPTY_ARRAY, # TODO
-          annotations: EMPTY_ARRAY, # TODO
+          members: Array.new, # TODO
+          annotations: Array.new, # TODO
           location: node[:location],
           comment: node[:comment]
         )
@@ -84,9 +84,9 @@ module Gloss
             name: module_name.to_sym
           ),
           type_params: RBS::AST::Declarations::ModuleTypeParams.new, # responds to #add to add params
-          self_types: EMPTY_ARRAY, # TODO
-          members: EMPTY_ARRAY, # TODO
-          annotations: EMPTY_ARRAY, # TODO
+          self_types: Array.new, # TODO
+          members: Array.new, # TODO
+          annotations: Array.new, # TODO
           location: node[:location],
           comment: node[:comment]
         )
@@ -193,7 +193,7 @@ module Gloss
 
       when "VisibilityModifier"
 
-        src.write_ln "#{visit_node(node[:visibility])} #{visit_node(node[:exp])}"
+        src.write_ln "#{node[:visibility]} #{visit_node(node[:exp])}"
       when "CollectionNode"
         node[:children].each { |a| src.write visit_node(a, scope) }
       when "Call"
@@ -480,7 +480,7 @@ module Gloss
 
       contents = [
         rp.map { |a| visit_node(a) },
-        op.map { |a| "#{a[:name]} = #{visit_node([:value]).strip}" },
+        op.map { |a| "#{a[:name]} = #{visit_node(a[:value]).strip}" },
         rkw.map { |name, _| "#{name}:" },
         okw.map { |name, value| "#{name}: #{value}" },
         rest_p ? "*#{rest_p}" : "",
