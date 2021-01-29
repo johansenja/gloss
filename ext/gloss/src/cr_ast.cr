@@ -104,16 +104,18 @@ module Crystal
 
   class Def < ASTNode
     def to_rb
-      required_args = args.dup
-      splat = @splat_index ? required_args.delete_at(@splat_index.as(Int32)) : nil
+      positional_args = args.dup
+      splat = @splat_index ? positional_args.delete_at(@splat_index.as(Int32)) : nil
       Rb::AST::DefNode.new(
-        @name,
-        required_args.map(&.to_rb),
-        @body.to_rb,
         receiver.try(&.to_rb),
-        return_type.try(&.to_rb),
+        @name,
+        positional_args.map(&.to_rb),
         splat.try(&.to_rb),
-        @double_splat.try(&.to_rb)
+        @double_splat.try(&.to_rb),
+        @body.to_rb,
+        return_type.try(&.to_rb),
+        @yields,
+        @block_arg.try &.to_rb
       )
     end
   end
@@ -197,7 +199,7 @@ module Crystal
 
   class MultiAssign < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::MultiAssign.new(@targets.map(&.to_rb), @values.map(&.to_rb))
     end
   end
 
@@ -440,9 +442,29 @@ module Crystal
     end
   end
 
-  {% for class_name in %w[ProcNotation Macro OffsetOf VisibilityModifier RespondsTo
+  class VisibilityModifier < ASTNode
+    def to_rb
+      Rb::AST::VisibilityModifier.new(@modifier, @exp.to_rb)
+    end
+  end
+
+  class Yield < ASTNode
+    def to_rb
+      Rb::AST::Call.new(
+        nil,
+        "yield",
+        @exps.map(&.to_rb),
+        nil,
+        nil,
+        nil,
+        !@exps.empty?
+      )
+    end
+  end
+
+  {% for class_name in %w[ProcNotation Macro OffsetOf RespondsTo
                          Select ImplicitObj AnnotationDef While Until UninitializedVar
-                         ProcPointer Self Yield LibDef FunDef TypeDef CStructOrUnionDef
+                         ProcPointer Self LibDef FunDef TypeDef CStructOrUnionDef
                          ExternalVar Alias Metaclass Cast NilableCast TypeOf Annotation
                          Underscore MagicConstant Asm AsmOperand] %}
     class {{class_name.id}} < ASTNode

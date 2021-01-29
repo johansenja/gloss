@@ -115,7 +115,7 @@ module Crystal
           case next_char
           when '='
             next_char :"<<="
-          when '-'
+          when '-', '~'
             has_single_quote = false
             found_closing_single_quote = false
 
@@ -1181,6 +1181,64 @@ module Crystal
       end
 
       @token
+    end
+
+    def check_heredoc_start
+      return nil unless current_char == '<' && next_char == '<' && {'-', '~'}.includes?(next_char)
+
+      has_single_quote = false
+      found_closing_single_quote = false
+
+      char = next_char
+      start_here = current_pos
+
+      if char == '\''
+        has_single_quote = true
+        char = next_char
+        start_here = current_pos
+      end
+
+      return nil unless ident_part?(char)
+
+      end_here = 0
+
+      while true
+        char = next_char
+        case
+        when char == '\r'
+          if peek_next_char == '\n'
+            end_here = current_pos
+            next_char
+            break
+          else
+            return nil
+          end
+        when char == '\n'
+          end_here = current_pos
+          break
+        when ident_part?(char)
+          # ok
+        when char == '\0'
+          return nil
+        else
+          if char == '\'' && has_single_quote
+            found_closing_single_quote = true
+            end_here = current_pos
+            next_char
+            break
+          elsif has_single_quote
+            # wait until another quote
+          else
+            end_here = current_pos
+            break
+          end
+        end
+      end
+
+      return nil if has_single_quote && !found_closing_single_quote
+
+      here = string_range(start_here, end_here)
+      Token::DelimiterState.new(:heredoc, here, here, allow_escapes: !has_single_quote)
     end
   end
 end
