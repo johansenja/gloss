@@ -122,8 +122,8 @@ module Gloss
                         )
                       end
 
-        rp = (node[:positional_args] || EMPTY_ARRAY).filter { |a| !a[:value] }
-        op = (node[:positional_args] || EMPTY_ARRAY).filter { |a| a[:value] }
+        rp : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| !a[:value] }
+        op : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| a[:value] }
 
         method_types = [
           RBS::MethodType.new(
@@ -195,7 +195,7 @@ module Gloss
 
         src.write_ln "#{visit_node(node[:visibility])} #{visit_node(node[:exp])}"
       when "CollectionNode"
-        src.write(*node[:children].map { |a| visit_node(a, scope) })
+        node[:children].each { |a| src.write visit_node(a, scope) }
       when "Call"
         obj = node[:object] ? "#{visit_node(node[:object], scope)}." : ""
         arg_arr = node.fetch(:args) { EMPTY_ARRAY }
@@ -236,7 +236,7 @@ module Gloss
 
       when "ArrayLiteral"
 
-        src.write("[", *node[:elements].map { |e| visit_node(e).strip }.join(", "), "]")
+        src.write("[", node[:elements].map { |e| visit_node(e).strip }.join(", "), "]")
         src.write ".freeze" if node[:frozen]
 
       when "StringInterpolation"
@@ -376,7 +376,7 @@ module Gloss
           visit_node(body, locals)
         end.flatten
         @indent_level += 1 unless indent_level.zero?
-        src.write(*expanded)
+        expanded.each { |e| src.write e }
         @inside_macro = false
       when "MacroLiteral"
         src.write node[:value]
@@ -476,7 +476,7 @@ module Gloss
       okw : Hash[Symbol, Any] = node.fetch(:opt_kw_args) { EMPTY_HASH }
       rest_p : String? = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
       rest_kw : Hash[Symbol, Any]? = node[:rest_kw_args]
-      return nil unless [rp, op, rkw, okw, rest_p, rest_kw].any? { |a| !a.nil? || !a.empty? }
+      return nil if [rp, op, rkw, okw, rest_p, rest_kw].all? { |a| a && a.empty? }
 
       contents = [
         rp.map { |a| visit_node(a) },

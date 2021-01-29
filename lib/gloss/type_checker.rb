@@ -15,7 +15,6 @@ module Gloss
       @top_level_decls = {}
     end
     def run(rb_str)
-      puts rb_str
       unless       check_types(rb_str)
         raise(Errors::TypeError, @steep_target.errors
 .map() { |e|
