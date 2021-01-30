@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install ruby
-        run: apt-get update && apt-get install -y ruby && which ruby
+        run: apt-add-repository -y ppa:rael-gc/rvm && apt-get update && apt-get install -y rvm && rvm install 2.7.2
       - uses: actions/cache@v2
         id: gems-cache
         with:
