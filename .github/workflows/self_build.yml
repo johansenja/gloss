@@ -19,4 +19,4 @@ jobs:
       - name: Install ruby
         run: apt-get update && apt-get install -y ruby && which ruby
       - name: Build self
-        run: gloss build
+        run: exe/gloss build
