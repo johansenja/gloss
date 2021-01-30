@@ -19,6 +19,7 @@ module Listen
                 ?ignore: Regexp | Array[Regexp],
                 ?ignore!: Regexp,
                 ?only: Regexp?,
+                ?latency: (Integer | Float)?,
                 ?polling_fallback_message: String?) {
                   (Array[String] modified, Array[String] added, Array[String] removed) -> void
                 } -> Listener
