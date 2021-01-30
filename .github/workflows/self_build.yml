@@ -17,6 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install ruby
-        run: apt-get update && apt-get install ruby=2.7 && which ruby
+        run: apt-get update && apt-get install ruby && which ruby
       - name: Build self
         run: gloss build
