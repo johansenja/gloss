@@ -35,9 +35,9 @@ jobs:
         run: gem install bundler:2.2.3
       - name: install gems
         run: bundle install --jobs 4 --retry 3
-      - name: install shards
+      - name: install shards and make
         working-directory: ext/gloss
-        run: shards install
+        run: shards install && make
       - name: Build self with current state
         run: exe/gloss build
       - name: check installation from rubygems
