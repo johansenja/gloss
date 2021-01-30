@@ -16,7 +16,7 @@ endif
 
 ifeq "$(PLATFORM)" "Linux"
 build: ./src/gloss.cr
-	$(CRYSTAL) build $< --link-flags "-dynamic -bundle -Wl,-undefined,dynamic_lookup" -o $(TARGET)
+	$(CRYSTAL) build $< --link-flags "-dynamic -Wl,-undefined,dynamic_lookup" -o $(TARGET)
 endif
 
 clean:
