@@ -38,6 +38,6 @@ jobs:
       - name: build native extensions
         run: cd ext/gloss && make && cd -
       - name: Build self with current state
-        run: exe/gloss build
+        run: ls lib/gloss && exe/gloss build
       - name: check installation from rubygems
         run: gem install gloss
