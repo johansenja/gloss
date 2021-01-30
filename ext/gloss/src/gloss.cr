@@ -17,14 +17,6 @@ def parse_string(_self : CrRuby::VALUE, str : CrRuby::VALUE)
   CrRuby.rb_str_new_cstr(output)
 end
 
-{% if flag? :linux %}
-  struct Proc
-    def to_unsafe
-      self
-    end
-  end
-{% end %}
-
 fun init = Init_gls
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
