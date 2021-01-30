@@ -25,9 +25,7 @@ fun init = Init_gls
     CrRuby.rb_define_singleton_method(
       gloss,
       "parse_buffer",
-      ->(klass : CrRuby::VALUE, str : CrRuby::VALUE) {
-        parse_string(klass, str)
-      }.as(CrRuby::METHOD_FUNC),
+      ->parse_string(CrRuby::VALUE, CrRuby::VALUE).as(CrRuby::METHOD_FUNC),
       1
     );
   {% else %}
