@@ -2,11 +2,7 @@ lib CrRuby
   # every ruby Object is a VALUE
   type VALUE = Void*
   # ruby method typing
-  {% if flag?(:linux) %}
-    type METHOD_FUNC = Void*
-  {% else %}
-    type METHOD_FUNC = VALUE, VALUE -> VALUE
-  {% end %}
+  type METHOD_FUNC = Proc(CrRuby::VALUE, CrRuby::VALUE, CrRuby::VALUE)
 
   # a ruby Class is a VALUE
   $rb_cObject : VALUE
