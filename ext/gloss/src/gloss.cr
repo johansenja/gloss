@@ -17,23 +17,22 @@ def parse_string(_self : CrRuby::VALUE, str : CrRuby::VALUE)
   CrRuby.rb_str_new_cstr(output)
 end
 
+{% if flag? :linux %}
+  struct Proc
+    def to_unsafe
+      self
+    end
+  end
+{% end %}
+
 fun init = Init_gls
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
   gloss = CrRuby.rb_define_module("Gloss");
-  {% if flag?(:linux) %}
-    CrRuby.rb_define_singleton_method(
-      gloss,
-      "parse_buffer",
-      ->parse_string(CrRuby::VALUE, CrRuby::VALUE),
-      1
-    );
-  {% else %}
-    CrRuby.rb_define_singleton_method(
-      gloss,
-      "parse_buffer",
-      ->parse_string(CrRuby::VALUE, CrRuby::VALUE),
-      1
-    );
-  {% end %}
+  CrRuby.rb_define_singleton_method(
+    gloss,
+    "parse_buffer",
+    ->parse_string(CrRuby::VALUE, CrRuby::VALUE),
+    1
+  );
 end
