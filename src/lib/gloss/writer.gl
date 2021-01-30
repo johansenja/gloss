@@ -7,7 +7,7 @@ module Gloss
   module Utils
     module_function
 
-    def src_path_to_output_path(src_path)
+    def src_path_to_output_path(src_path : String) : String
       src_path.sub(%r{\A(?:\./)?#{Config.src_dir}/?}, "")
               .sub(/\.gl$/, ".rb")
     end
@@ -18,8 +18,8 @@ module Gloss
 
     def initialize(
       @content,
-      src_path : String?,
-      @output_path : Pathname = Pathname.new(src_path_to_output_path(src_path))
+      src_path : String,
+      @output_path : Pathname? = Pathname.new(src_path_to_output_path(src_path))
     )
     end
 

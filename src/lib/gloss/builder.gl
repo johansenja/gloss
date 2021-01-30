@@ -213,7 +213,7 @@ module Gloss
                               nil
                             end
         call = "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
-        node.dig(:object, :type) == "Call" ? src.write(call) : src.write_ln(call)
+        src.write_ln(call)
 
       when "Block"
 
@@ -424,9 +424,37 @@ module Gloss
         fn = node[:function]
         src.write "->#{render_args(fn)} { #{visit_node fn[:body]} }"
       when "Include"
-        src.write_ln "include #{visit_node node[:name]}"
+        current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
+        name = visit_node node[:name]
+        src.write_ln "include #{name}"
+          type = RBS::AST::Members::Include.new(
+            name: method(:TypeName).call(name),
+            args: Array.new,
+            annotations: Array.new,
+            location: node[:location],
+            comment: node[:comment]
+          )
+        if @current_scope
+          @current_scope.members << type
+        else
+          @type_checker.type_env << type
+        end
       when "Extend"
-        src.write_ln "extend #{visit_node node[:name]}"
+        current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
+        name = visit_node node[:name]
+        src.write_ln "extend #{name}"
+          type = RBS::AST::Members::Extend.new(
+            name: method(:TypeName).call(name),
+            args: Array.new,
+            annotations: Array.new,
+            location: node[:location],
+            comment: node[:comment]
+          )
+        if @current_scope
+          @current_scope.members << type
+        else
+          @type_checker.type_env << type
+        end
       when "RegexLiteral"
         contents = visit_node node[:value]
         src.write Regexp.new(contents.undump).inspect

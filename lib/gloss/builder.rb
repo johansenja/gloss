@@ -102,7 +102,8 @@ case node.[](:"type")
           src.write_ln("def #{node.[](:"name")}#{args}")
           return_type = (if node.[](:"return_type")
             RBS::Types::ClassInstance.new(name:             RBS::TypeName.new(name:             eval(visit_node(node.[](:"return_type")))
-.to_s.to_sym, namespace:             RBS::Namespace.root), args: EMPTY_ARRAY, location:             node.[](:"location"))
+.to_s
+.to_sym, namespace:             RBS::Namespace.root), args: EMPTY_ARRAY, location:             node.[](:"location"))
           else
             RBS::Types::Bases::Any.new(location:             node.[](:"location"))
           end)
@@ -176,8 +177,10 @@ EMPTY_ARRAY          }
           args = (if !arg_arr.empty? || node.[](:"block_arg")
             "#{arg_arr.map() { |a|
               visit_node(a, scope)
-.strip            }
-.reject(&:"blank?").join(", ")}#{(if node.[](:"block_arg")
+.strip
+            }
+.reject(&:"blank?")
+.join(", ")}#{(if node.[](:"block_arg")
               "&#{visit_node(node.[](:"block_arg"))
 .strip}"
             end)}"
@@ -198,12 +201,7 @@ EMPTY_ARRAY          }
           call = "#{obj}#{node.[](:"name")}#{opening_delimiter}#{args}#{(if has_parens
             ")"
           end)}#{block}"
-          (if node.dig(:"object", :"type")
-.==("Call")
-            src.write(call)
-          else
-            src.write_ln(call)
-          end)
+          src.write_ln(call)
         when "Block"
           src.write("{ |#{node.[](:"args")
 .map() { |a|
@@ -227,7 +225,8 @@ EMPTY_ARRAY          }
           src.write("[", node.[](:"elements")
 .map() { |e|
             visit_node(e)
-.strip          }
+.strip
+          }
 .join(", "), "]")
           (if node.[](:"frozen")
             src.write(".freeze")
@@ -256,11 +255,13 @@ EMPTY_ARRAY          }
           src.write_ln("#{node.[](:"targets")
 .map() { |t|
             visit_node(t)
-.strip          }
+.strip
+          }
 .join(", ")} = #{node.[](:"values")
 .map() { |v|
             visit_node(v)
-.strip          }
+.strip
+          }
 .join(", ")}")
         when "Var"
           (if @eval_vars
@@ -482,9 +483,41 @@ EMPTY_ARRAY          }
           fn = node.[](:"function")
           src.write("->#{render_args(fn)} { #{visit_node(fn.[](:"body"))} }")
         when "Include"
-          src.write_ln("include #{visit_node(node.[](:"name"))}")
+          current_namespace = (if @current_scope
+            @current_scope.name
+.to_namespace
+          else
+            RBS::Namespace.root
+          end)
+          name = visit_node(node.[](:"name"))
+          src.write_ln("include #{name}")
+          type = RBS::AST::Members::Include.new(name:           method(:"TypeName")
+.call(name), args:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+          (if @current_scope
+            @current_scope.members
+.<<(type)
+          else
+            @type_checker.type_env
+.<<(type)
+          end)
         when "Extend"
-          src.write_ln("extend #{visit_node(node.[](:"name"))}")
+          current_namespace = (if @current_scope
+            @current_scope.name
+.to_namespace
+          else
+            RBS::Namespace.root
+          end)
+          name = visit_node(node.[](:"name"))
+          src.write_ln("extend #{name}")
+          type = RBS::AST::Members::Extend.new(name:           method(:"TypeName")
+.call(name), args:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+          (if @current_scope
+            @current_scope.members
+.<<(type)
+          else
+            @type_checker.type_env
+.<<(type)
+          end)
         when "RegexLiteral"
           contents = visit_node(node.[](:"value"))
           src.write(Regexp.new(contents.undump)
@@ -493,8 +526,10 @@ EMPTY_ARRAY          }
           types = node.[](:"types")
           output = (if types.length
 .==(2) && types.[](1)
-.[](:"type").==("Path") && types.[](1)
-.[]("value").==(nil)
+.[](:"type")
+.==("Path") && types.[](1)
+.[]("value")
+.==(nil)
             "#{visit_node(types.[](0))}?"
           else
             types.map() { |t|
@@ -573,7 +608,8 @@ a && a.empty?      }
       else
         ""
       end)].reject(&:"empty?")
-.flatten.join(", ")
+.flatten
+.join(", ")
 "(#{contents})"
     end
   end
