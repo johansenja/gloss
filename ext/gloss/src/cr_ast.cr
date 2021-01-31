@@ -140,7 +140,9 @@ module Crystal
 
   class Block < ASTNode
     def to_rb
-      Rb::AST::Block.new(@args.map(&.to_rb), @body.to_rb)
+      positional_args = args.dup
+      splat = @splat_index ? positional_args.delete_at(@splat_index.as(Int32)) : nil
+      Rb::AST::Block.new(positional_args.map(&.to_rb), splat.try &.to_rb, @body.to_rb)
     end
   end
 
