@@ -113,7 +113,7 @@ module Gloss
         src.write_ln "end"
       when "DefNode"
         args = render_args(node)
-        src.write_ln "def #{node[:name]}#{args}"
+        src.write_ln "def #{node[:name]}#{args[:representation]}"
 
         return_type = if node[:return_type]
                         RBS::Types::ClassInstance.new(
@@ -130,36 +130,17 @@ module Gloss
                         )
                       end
 
-        rp : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| !a[:value] }
-        op : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| a[:value] }
-
         method_types = [
           RBS::MethodType.new(
             type_params: EMPTY_ARRAY, # TODO
             type: RBS::Types::Function.new(
-              required_positionals: rp.map do |a|
-                RBS::Types::Function::Param.new(
-                  name: visit_node(a).to_sym,
-                  type: RBS::Types::Bases::Any.new(
-                    location: a[:location]
-                  )
-                )
-              end,
-              optional_positionals: op.map do |a|
-                RBS::Types::Function::Param.new(
-                  name: visit_node(a).to_sym,
-                  type: RBS::Types::Bases::Any.new(location: a[:location])
-                )
-              end,
-              rest_positionals: (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: node[:location])) : nil,
-              trailing_positionals: EMPTY_ARRAY, # TODO
-              required_keywords: node[:req_kw_args] || EMPTY_HASH,
-              optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
-              rest_keywords: node[:rest_kw_args] ?
-                RBS::Types::Function::Param.new(
-                  name: visit_node(node[:rest_kw_args]).to_sym,
-                  type: RBS::Types::Bases::Any.new(location: node[:location])
-                ) : nil,
+              required_positionals: args.dig(:types, :required_positionals),
+              optional_positionals: args.dig(:types, :optional_positionals),
+              rest_positionals: args.dig(:types, :rest_positionals),
+              trailing_positionals: args.dig(:types, :trailing_positionals),
+              required_keywords: args.dig(:types, :required_keywords),
+              optional_keywords: args.dig(:types, :optional_keywords),
+              rest_keywords: args.dig(:types, :rest_keywords),
               return_type: return_type
             ),
             block: node[:yield_arg_count] ?
@@ -224,8 +205,8 @@ module Gloss
         src.write_ln(call)
 
       when "Block"
-
-        src.write "{ |#{node[:args].map { |a| visit_node a }.join(", ")}|\n"
+        args = render_args node
+        src.write "{ #{args[:representation].gsub(/(\A\(|\)\z)/,'|')}\n"
 
         indented(src) { src.write visit_node(node[:body]) }
 
@@ -508,7 +489,8 @@ module Gloss
       src.decrement_indent
     end
 
-    private def render_args(node)
+    # TODO: allow NamedTuple as return type
+    private def render_args(node)# : { representation: String, types: Hash[Symbol, Any] }
       rp : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| !a[:value] }
       op : Array[Hash[Symbol, Any]] = node.fetch(:positional_args) { EMPTY_ARRAY }.filter { |a| a[:value] }
       rkw : Hash[Symbol, Any] = node.fetch(:req_kw_args) { EMPTY_HASH }
@@ -525,7 +507,38 @@ module Gloss
         rest_p ? "*#{rest_p}" : "",
         rest_kw ? "**#{visit_node(rest_kw)}" : ""
       ].reject(&:empty?).flatten.join(", ")
-      "(#{contents})"
+      representation = "(#{contents})"
+      rp.map! do |a|
+        RBS::Types::Function::Param.new(
+          name: visit_node(a).to_sym,
+          type: RBS::Types::Bases::Any.new(
+            location: a[:location]
+          )
+        )
+      end
+      op.map! do |a|
+        RBS::Types::Function::Param.new(
+          name: visit_node(a).to_sym,
+          type: RBS::Types::Bases::Any.new(location: a[:location])
+        )
+      end
+      rest_p = (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: node[:location])) : nil
+      {
+        representation: representation,
+        types: {
+          required_positionals: rp,
+          optional_positionals: op,
+          rest_positionals: rest_p,
+          trailing_positionals: EMPTY_ARRAY, # TODO
+          required_keywords: node[:req_kw_args] || EMPTY_HASH,
+          optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
+          rest_keywords: node[:rest_kw_args] ?
+            RBS::Types::Function::Param.new(
+              name: visit_node(node[:rest_kw_args]).to_sym,
+              type: RBS::Types::Bases::Any.new(location: node[:location])
+            ) : nil
+        }
+      }
     end
   end
 end

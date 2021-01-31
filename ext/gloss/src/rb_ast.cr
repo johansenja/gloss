@@ -43,13 +43,14 @@ module Rb
     end
 
     class Block < Node
-      @info : NamedTuple(type: String, args: Array(Var), body: Node)
+      @info : NamedTuple(type: String, positional_args: Array(Var), body: Node, rest_p_args: Node?)
 
-      def initialize(args, body)
+      def initialize(args, splat, body)
         @info = {
           type: self.class.name.split("::").last,
           body: body,
-          args: args,
+          positional_args: args,
+          rest_p_args: splat
         }
       end
 

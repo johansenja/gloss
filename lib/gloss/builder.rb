@@ -107,7 +107,7 @@ case node.[](:"type")
           src.write_ln("end")
         when "DefNode"
           args = render_args(node)
-          src.write_ln("def #{node.[](:"name")}#{args}")
+          src.write_ln("def #{node.[](:"name")}#{args.[](:"representation")}")
           return_type = (if node.[](:"return_type")
             RBS::Types::ClassInstance.new(name:             RBS::TypeName.new(name:             eval(visit_node(node.[](:"return_type")))
 .to_s
@@ -115,34 +115,7 @@ case node.[](:"type")
           else
             RBS::Types::Bases::Any.new(location:             node.[](:"location"))
           end)
-          # @type var rp: Array[Hash[Symbol, Any]]
-          rp =           node.fetch(:"positional_args") { ||
-EMPTY_ARRAY          }
-.filter() { |a|
-!a.[](:"value")          }
-          # @type var op: Array[Hash[Symbol, Any]]
-          op =           node.fetch(:"positional_args") { ||
-EMPTY_ARRAY          }
-.filter() { |a|
-            a.[](:"value")
-          }
-          method_types = [RBS::MethodType.new(type_params: EMPTY_ARRAY, type:           RBS::Types::Function.new(required_positionals:           rp.map() { |a|
-            RBS::Types::Function::Param.new(name:             visit_node(a)
-.to_sym, type:             RBS::Types::Bases::Any.new(location:             a.[](:"location")))
-          }, optional_positionals:           op.map() { |a|
-            RBS::Types::Function::Param.new(name:             visit_node(a)
-.to_sym, type:             RBS::Types::Bases::Any.new(location:             a.[](:"location")))
-          }, rest_positionals:           (if rpa = node.[](:"rest_p_args")
-            RBS::Types::Function::Param.new(name:             visit_node(rpa)
-.to_sym, type:             RBS::Types::Bases::Any.new(location:             node.[](:"location")))
-          else
-            nil
-          end), trailing_positionals: EMPTY_ARRAY, required_keywords: node.[](:"req_kw_args") || EMPTY_HASH, optional_keywords: node.[](:"opt_kw_args") || EMPTY_HASH, rest_keywords:           (if node.[](:"rest_kw_args")
-            RBS::Types::Function::Param.new(name:             visit_node(node.[](:"rest_kw_args"))
-.to_sym, type:             RBS::Types::Bases::Any.new(location:             node.[](:"location")))
-          else
-            nil
-          end), return_type: return_type), block:           (if node.[](:"yield_arg_count")
+          method_types = [RBS::MethodType.new(type_params: EMPTY_ARRAY, type:           RBS::Types::Function.new(required_positionals:           args.dig(:"types", :"required_positionals"), optional_positionals:           args.dig(:"types", :"optional_positionals"), rest_positionals:           args.dig(:"types", :"rest_positionals"), trailing_positionals:           args.dig(:"types", :"trailing_positionals"), required_keywords:           args.dig(:"types", :"required_keywords"), optional_keywords:           args.dig(:"types", :"optional_keywords"), rest_keywords:           args.dig(:"types", :"rest_keywords"), return_type: return_type), block:           (if node.[](:"yield_arg_count")
             RBS::Types::Block.new(type:             RBS::Types::Function.new(required_positionals:             Array.new, optional_positionals:             Array.new, rest_positionals: nil, trailing_positionals:             Array.new, required_keywords:             Hash.new, optional_keywords:             Hash.new, rest_keywords: nil, return_type:             RBS::Types::Bases::Any.new(location:             node.[](:"location"))), required: !!node.[](:"block_arg") || node.[](:"yield_arg_count"))
           else
             nil
@@ -211,11 +184,9 @@ EMPTY_ARRAY          }
           end)}#{block}"
           src.write_ln(call)
         when "Block"
-          src.write("{ |#{node.[](:"args")
-.map() { |a|
-            visit_node(a)
-          }
-.join(", ")}|\n")
+          args = render_args(node)
+          src.write("{ #{args.[](:"representation")
+.gsub(/(\A\(|\)\z)/, "|")}\n")
           indented(src) { ||
             src.write(visit_node(node.[](:"body")))
           }
@@ -399,7 +370,7 @@ EMPTY_ARRAY          }
           end
           # @type var expanded: Array[String]
           expanded =           eval(visit_node(expr))
-.map() { |a|
+.map() { |*a|
             locals = [var_names.join("\", \"")].zip(a)
 .to_h
             (if @inside_macro
@@ -623,8 +594,35 @@ a && a.empty?      }
       end)].reject(&:"empty?")
 .flatten
 .join(", ")
-"(#{contents})"
+      representation = "(#{contents})"
+      rp.map!() { |a|
+        RBS::Types::Function::Param.new(name:         visit_node(a)
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
+      }
+      op.map!() { |a|
+        RBS::Types::Function::Param.new(name:         visit_node(a)
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
+      }
+      rest_p = (if rpa = node.[](:"rest_p_args")
+        RBS::Types::Function::Param.new(name:         visit_node(rpa)
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         node.[](:"location")))
+      else
+        nil
+      end)
+{:representation => representation,
+:types => {:required_positionals => rp,
+:optional_positionals => op,
+:rest_positionals => rest_p,
+:trailing_positionals => EMPTY_ARRAY,
+:required_keywords => node.[](:"req_kw_args") || EMPTY_HASH,
+:optional_keywords => node.[](:"opt_kw_args") || EMPTY_HASH,
+:rest_keywords =>       (if node.[](:"rest_kw_args")
+        RBS::Types::Function::Param.new(name:         visit_node(node.[](:"rest_kw_args"))
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         node.[](:"location")))
+      else
+        nil
+      end)
+}.freeze}.freeze
     end
   end
 end
-
