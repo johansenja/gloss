@@ -1,5 +1,3 @@
-require "gloss"
-
 RSpec.describe Gloss::Builder do
   it "expands macros" do
     output = Gloss::Builder.new(

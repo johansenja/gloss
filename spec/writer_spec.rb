@@ -1,4 +1,3 @@
-require "gloss"
 require 'tempfile'
 require "fileutils"
 
