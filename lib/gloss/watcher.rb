@@ -6,24 +6,38 @@
   require "listen"
 module Gloss
   class Watcher
-    def initialize()
-      @paths = ["src/"]
+    def initialize(paths)
+      @paths = paths
+      (if @paths.empty?
+        @paths = [File.join(Dir.pwd, Config.src_dir)]
+      end)
     end
     def watch()
       puts("=====> Now listening for changes in #{@paths.join(", ")}")
       listener = Listen.to(*@paths, latency: 2) { |modified, added, removed|
         modified.+(added)
 .each() { |f|
+          unless           f.end_with?(".gl")
+            next
+          end
+          puts("====> Rewriting #{f}")
           content = File.read(f)
-          Writer.new(Builder.new(content)
+          Writer.new(Builder.new(Parser.new(content)
+.run)
 .run, f)
 .run
+          puts("====> Done")
         }
         removed.each() { |f|
+          unless           f.end_with?(".gl")
+            next
+          end
           out_path = Utils.src_path_to_output_path(f)
+          puts("====> Removing #{out_path}")
           (if File.exist?(out_path)
             File.delete(out_path)
           end)
+          puts("====> Done")
         }
       }
       listener.start

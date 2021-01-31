@@ -14,7 +14,7 @@ module Gloss
       files = @argv.[]((1..-1))
 case command
         when "watch"
-          Watcher.new
+          Watcher.new(files)
 .watch
         when "build"
           (if files.empty?
