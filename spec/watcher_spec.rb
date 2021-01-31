@@ -1,14 +1,7 @@
-require "fileutils"
-require "pathname"
-require "gloss"
-
 RSpec.describe Gloss::Watcher do
-  DIR = "./tmp"
-
   before :all do
-    Dir.mkdir(DIR) unless Pathname(DIR).exist?
-    Dir.chdir(DIR) do
-      File.open(".gloss.yml", "wb") do |f|
+    Dir.chdir(TESTING_DIR) do
+      File.open(Gloss::CONFIG_PATH, "wb") do |f|
         f.puts <<~YML
           src_dir: src
           frozen_string_literals: true
@@ -18,13 +11,9 @@ RSpec.describe Gloss::Watcher do
     end
   end
 
-  after :all do
-    FileUtils.rm_r DIR
-  end
-
   it "creates the rb file when the gl file created" do
-    expect((Pathname(DIR) / "src" / "new_file.gl").exist?).to be false
-    Dir.chdir DIR do
+    expect((Pathname(TESTING_DIR) / "src" / "new_file.gl").exist?).to be false
+    Dir.chdir TESTING_DIR do
       w = Thread.new { Gloss::Watcher.new([]).watch }
       sleep 0.5
       File.open(File.join("src", "new_file.gl"), "wb") do |f|
@@ -33,12 +22,12 @@ RSpec.describe Gloss::Watcher do
       sleep 3
       w.kill
     end
-    expect((Pathname(DIR) / "src" / "new_file.gl").exist?).to be true
-    expect((Pathname(DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello world\")\n")
+    expect((Pathname(TESTING_DIR) / "src" / "new_file.gl").exist?).to be true
+    expect((Pathname(TESTING_DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello world\")\n")
   end
 
   it "updates the rb file when the gl file updated" do
-    Dir.chdir DIR do
+    Dir.chdir TESTING_DIR do
       Dir.chdir "src" do
         File.open("new_file.gl", "wb") do |f|
           f.puts "puts 'hello world'"
@@ -55,11 +44,11 @@ RSpec.describe Gloss::Watcher do
       w.kill
     end
 
-    expect((Pathname(DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello\")\n")
+    expect((Pathname(TESTING_DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello\")\n")
   end
 
   it "deletes the rb file when the gl file deleted" do
-    Dir.chdir DIR do
+    Dir.chdir TESTING_DIR do
       Dir.chdir "src" do
         File.open("new_file.gl", "wb") do |f|
           f.puts "puts 'hello world'"

@@ -4,12 +4,18 @@ require "ostruct"
 require "yaml"
 
 module Gloss
-  user_config = YAML.safe_load(File.read(".gloss.yml"))
+  CONFIG_PATH = ".gloss.yml"
   Config = OpenStruct.new(
     default_config: {
       frozen_string_literals: true,
       src_dir: "src",
     }
   )
+
+  user_config = if File.exist?(CONFIG_PATH)
+                  YAML.safe_load(File.read(CONFIG_PATH))
+                else
+                  Config.default_config
+                end
   Config.default_config.each { |k, v| Config.send(:"#{k}=", user_config[k.to_s] || v) }
 end
