@@ -1,5 +1,7 @@
 # Gloss
 [![Gem Version](https://badge.fury.io/rb/gloss.svg)](https://badge.fury.io/rb/gloss)
+[![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&metric=true&label=downloads%20(total)&total_label=)](http://ruby-gem-downloads-badge.herokuapp.com/gloss)
+[![Current Version](http://ruby-gem-downloads-badge.herokuapp.com/gloss?color=green&label=downloads%20(current%20version)&metric=true)](http://ruby-gem-downloads-badge.herokuapp.com/gloss)
 
 [Gloss](https://en.wikipedia.org/wiki/Gloss_(annotation)) is a high-level programming language based on [Ruby](https://github.com/ruby/ruby) and [Crystal](https://github.com/crystal-lang/crystal), which compiles to ruby; its aims are on transparency,
 efficiency, and to enhance ruby's goal of developer happiness and productivity. Some of the features include:
