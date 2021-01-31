@@ -9,7 +9,7 @@ module Gloss
   module Utils
     module_function
     def src_path_to_output_path(src_path)
-      src_path.sub(/\A(?:\.\/)?#{Config.src_dir}\/?/, "")
+      src_path.sub("#{Config.src_dir}/", "")
 .sub(/\.gl$/, ".rb")
     end
   end
@@ -25,7 +25,7 @@ module Gloss
         FileUtils.mkdir_p(@output_path.parent)
       end
       File.open(@output_path, "wb") { |file|
-        file.<<(@content)
+        file.puts(@content)
       }
     end
   end

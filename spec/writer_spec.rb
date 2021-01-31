@@ -8,7 +8,7 @@ RSpec.describe Gloss::Writer do
     old_content = "abc"
     file.write old_content
     file.close
-    new_content = "hello world"
+    new_content = "hello world\n"
     Gloss::Writer.new(new_content, nil, Pathname(file.path)).run
     file.open
     expect(file.read).to eq new_content
@@ -23,7 +23,7 @@ RSpec.describe Gloss::Writer do
       expect(path.exist?).to be false
       Gloss::Writer.new("new file", nil, path).run
       expect(path.exist?).to be true
-      expect(path.read).to eq "new file"
+      expect(path.read).to eq "new file\n"
     ensure
       FileUtils.rm(path)
     end
@@ -35,7 +35,7 @@ RSpec.describe Gloss::Writer do
       expect(path.exist?).to be false
       Gloss::Writer.new("new file", nil, path).run
       expect(path.exist?).to be true
-      expect(path.read).to eq "new file"
+      expect(path.read).to eq "new file\n"
     ensure
       FileUtils.rm_rf(path.parent)
     end

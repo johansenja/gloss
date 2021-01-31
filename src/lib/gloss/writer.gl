@@ -8,7 +8,7 @@ module Gloss
     module_function
 
     def src_path_to_output_path(src_path : String) : String
-      src_path.sub(%r{\A(?:\./)?#{Config.src_dir}/?}, "")
+      src_path.sub("#{Config.src_dir}/", "")
               .sub(/\.gl$/, ".rb")
     end
   end
@@ -26,7 +26,7 @@ module Gloss
     def run
       FileUtils.mkdir_p(@output_path.parent) unless @output_path.parent.exist?
       File.open(@output_path, "wb") do |file|
-        file << @content
+        file.puts @content
       end
     end
   end
