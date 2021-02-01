@@ -1,13 +1,15 @@
 # Gloss
-[![Gem Version](https://badge.fury.io/rb/gloss.svg)](https://badge.fury.io/rb/gloss)
-[![Ruby Specs](https://github.com/johansenja/gloss/workflows/Ruby%20Specs/badge.svg)](https://github.com/johansenja/gloss/workflows/Ruby%20Specs/badge.svg)
-[![Crystal Specs](https://github.com/johansenja/gloss/workflows/Crystal%20Specs/badge.svg)](https://github.com/johansenja/gloss/workflows/Crystal%20Specs/badge.svg)
-[![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&metric=true&label=downloads%20(total)&total_label=)](http://ruby-gem-downloads-badge.herokuapp.com/gloss)
-[![Current Version](http://ruby-gem-downloads-badge.herokuapp.com/gloss?color=green&label=downloads%20(current%20version)&metric=true)](http://ruby-gem-downloads-badge.herokuapp.com/gloss)
-[![Total Views](https://counter.gofiber.io/badge/johansenja/gloss)](https://counter.gofiber.io/badge/johansenja/gloss)
+[![Gem Version](https://badge.fury.io/rb/gloss.svg)](https://rubygems.org/gems/gloss)
+[![Ruby Specs](https://github.com/johansenja/gloss/workflows/Ruby%20Specs/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3A%22Ruby+Specs%22)
+[![Crystal Specs](https://github.com/johansenja/gloss/workflows/Crystal%20Specs/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3A%22Crystal+Specs%22)
+[![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&metric=true&label=downloads%20(total)&total_label=)](https://rubygems.org/gems/gloss)
+[![Current Version](http://ruby-gem-downloads-badge.herokuapp.com/gloss?color=green&label=downloads%20(current%20version)&metric=true)](https://rubygems.org/gems/gloss)
+[![Total Views](https://counter.gofiber.io/badge/johansenja/gloss)](https://rubygems.org/gems/gloss)
 
 [Gloss](https://en.wikipedia.org/wiki/Gloss_(annotation)) is a high-level programming language based on [Ruby](https://github.com/ruby/ruby) and [Crystal](https://github.com/crystal-lang/crystal), which compiles to ruby; its aims are on transparency,
-efficiency, and to enhance ruby's goal of developer happiness and productivity. Some of the features include:
+efficiency, and to enhance ruby's goal of developer happiness and productivity.
+
+### Current features
 
 - Type checking, via optional type annotations
 - Compile-time macros
@@ -16,11 +18,26 @@ efficiency, and to enhance ruby's goal of developer happiness and productivity. 
 - All ruby files are valid gloss files (a small exceptions for now; workarounds are mostly available)
 - Other syntactic sugar
 
-Coming soon:
-- abstract classes
+### Current Status
 
-Maybe on the roadmap:
-- Method overloading
+This project is at a stage where the core non-crystal parts are written in Gloss and compile to ruby (essentially self-hosting), albeit with the type checking being fairly loose. However the project is still in the very early stages; with (as of yet) no Linux support nor error handling (see roadmap below). Use at your own discretion!
+
+### Approx. roadmap:
+
+- Improve error handling and logging (currently almost non-existant)
+- Address Linux compatibility (currently more or less non-existant)
+- Implement different strictnesses of type checking
+- Metaprogramming helpers/safety:*
+  - Abstract classes and methods
+  - Method lookup/existence checking at compile time
+  - Method overloading
+
+#### Related items:
+
+- Rails helpers; probably some time away*
+- Editor plugins/syntax highlighting/langserver; probably some time away*
+
+*__Dependent on popularity__
 
 ## Examples:
 
@@ -229,4 +246,12 @@ then
 
 then
 
+`mkdir src && echo "puts 'hello world'" > src/hello_world.gl`
+
+then
+
 `gloss build`
+
+then
+
+`ruby ./hello_world.rb`
