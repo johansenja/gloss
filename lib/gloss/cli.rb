@@ -13,41 +13,45 @@ module Gloss
       command = @argv.first
       files = @argv.[]((1..-1))
       err_msg = catch(:"error") { ||
-case command
-          when "watch"
-            Watcher.new(files)
+        begin
+          case command
+            when "watch"
+              Watcher.new(files)
 .watch
-          when "build"
-            (if files.empty?
-              Dir.glob("#{Config.src_dir}/**/*.gl")
-            else
-              files
-            end)
+            when "build"
+              (if files.empty?
+                Dir.glob("#{Config.src_dir}/**/*.gl")
+              else
+                files
+              end)
 .each() { |fp|
-              puts("=====> Building #{fp}")
-              content = File.read(fp)
-              tree_hash = Parser.new(content)
+                puts("=====> Building #{fp}")
+                content = File.read(fp)
+                tree_hash = Parser.new(content)
 .run
-              type_checker = TypeChecker.new
-              rb_output = Builder.new(tree_hash, type_checker)
+                type_checker = TypeChecker.new
+                rb_output = Builder.new(tree_hash, type_checker)
 .run
-              type_checker.run(rb_output)
-              puts("=====> Writing #{fp}")
-              Writer.new(rb_output, fp)
+                type_checker.run(rb_output)
+                puts("=====> Writing #{fp}")
+                Writer.new(rb_output, fp)
 .run
-            }
-          when "init"
-            force = false
-            OptionParser.new() { |opt|
-              opt.on("--force", "-f") { ||
-                force = true
               }
-            }
+            when "init"
+              force = false
+              OptionParser.new() { |opt|
+                opt.on("--force", "-f") { ||
+                  force = true
+                }
+              }
 .parse(@argv)
-            Initializer.new(force)
+              Initializer.new(force)
 .run
-          else
-            throw(:"error", "Gloss doesn't know how to #{command}")
+            else
+              throw(:"error", "Gloss doesn't know how to #{command}")
+          end
+        rescue  => e
+          throw(:"error", e.message)
         end
 nil      }
       (if err_msg

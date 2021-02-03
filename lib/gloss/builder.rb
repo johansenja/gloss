@@ -197,7 +197,7 @@ EMPTY_ARRAY          }
           else
             ".."
           end)
-          src.write("(", visit_node(node.[](:"from")), dots, visit_node(node.[](:"to")), ")")
+          src.write("(", "(", visit_node(node.[](:"from")), ")", dots, "(", visit_node(node.[](:"to")), ")", ")")
         when "LiteralNode"
           src.write(node.[](:"value"))
         when "ArrayLiteral"

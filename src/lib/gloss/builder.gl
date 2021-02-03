@@ -215,9 +215,10 @@ module Gloss
       when "RangeLiteral"
         dots = node[:exclusive] ? "..." : ".."
 
-        # parentheses help the compatibility with precendence of operators in some situations
+        # parentheses around the whole thing help the compatibility with precendence of operators in some situations
         # eg. (1..3).cover? 2 vs. 1..3.cover? 2
-        src.write "(", visit_node(node[:from]), dots, visit_node(node[:to]), ")"
+        # parentheses around either number help with things like arithemtic ((x-1)..(y+5))
+        src.write "(", "(", visit_node(node[:from]), ")", dots, "(", visit_node(node[:to]), ")", ")"
 
       when "LiteralNode"
 
