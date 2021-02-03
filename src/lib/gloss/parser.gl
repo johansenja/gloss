@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Gloss
   class Parser
     def initialize(@str : String)
@@ -10,9 +8,23 @@ module Gloss
       begin
         JSON.parse tree_json, symbolize_names: true
       rescue JSON::ParserError
-        # if parsing fails then tree is invalid and most likely an error message from the parser in
-        # crystal
-        raise Errors::ParserError, tree_json
+        error_message = tree_json
+        error_message.match /.+\s:(\d+)$/
+        if $1
+          line_number = $1.to_i
+          # line numbers start at 1, but array index starts at 0; so this still gives one line
+          # either side of the offending line
+          context = @str.lines[(line_number - 2)..(line_number)].map.with_index { |line, index|
+            "#{index - 1 + line_number}|  #{line}"
+          }.join
+          error_message = <<~MSG
+          #{context.rstrip}
+
+          #{error_message}
+
+          MSG
+        end
+        throw :error, error_message
       end
     end
   end

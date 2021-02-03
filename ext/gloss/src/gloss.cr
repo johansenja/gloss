@@ -11,7 +11,6 @@ def parse_string(self : CrRuby::VALUE, str : CrRuby::VALUE)
   output = begin
              Gloss.parse_string(string)
            rescue e : Crystal::SyntaxException
-             pp e.backtrace
              e.to_s
            end
 
