@@ -1,1 +1,3 @@
-lib/gloss/**/*.rb  linguist-generated=true
+lib/gloss/**/*.rb  linguist-generated
+# this will basically cover 99% of the syntax anyway
+**/*.gl linguist-language=Crystal
