@@ -235,12 +235,6 @@ module Crystal
     end
   end
 
-  class MacroExpression < ASTNode
-    def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
-    end
-  end
-
   class MacroIf < ASTNode
     def to_rb
       Rb::AST::MacroIf.new(@cond.to_rb, @then.to_rb, @else.to_rb)

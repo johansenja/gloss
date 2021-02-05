@@ -17,6 +17,7 @@ require "gloss/source"
 require "gloss/scope"
 require "gloss/builder"
 require "gloss/errors"
+require "gloss/logger"
 
 require "gls" unless ENV["CI"] # a bit of a hack for now
 

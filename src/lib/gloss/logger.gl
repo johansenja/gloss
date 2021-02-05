@@ -1,0 +1,26 @@
+module Gloss
+  def self.logger
+    if @logger
+      @logger
+    else
+      @logger = Logger.new(STDOUT)
+      env_log_level = ENV.fetch("LOG_LEVEL") { "INFO" }
+      @logger.level = {
+        "UNKNOWN" => Logger::UNKNOWN,
+        "FATAL" => Logger::FATAL,
+        "ERROR" => Logger::ERROR,
+        "WARN" => Logger::WARN,
+        "INFO" => Logger::INFO,
+        "DEBUG" => Logger::DEBUG,
+        "NIL" => nil,
+        nil => nil,
+        "" => nil
+      }.fetch env_log_level
+      formatter = Logger::Formatter.new
+      @logger.formatter = proc do |severity, datetime, progname, msg|
+        formatter.call(severity, datetime, progname, msg)
+      end
+      @logger
+    end
+  end
+end
