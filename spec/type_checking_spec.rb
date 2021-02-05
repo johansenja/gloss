@@ -283,8 +283,6 @@ RSpec.describe Gloss::TypeChecker do
 
   it "throws :error with invalid rbs signatures" do
     Dir.chdir TESTING_DIR do
-      Dir.mkdir "sig"
-      Dir.mkdir "src"
       File.open "sig/a.rbs", "wb" do |f|
         f.puts "invalid"
       end

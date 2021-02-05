@@ -7,7 +7,6 @@ RSpec.describe Gloss::Watcher do
           frozen_string_literals: true
         YML
       end
-      Dir.mkdir "src"
     end
   end
 
