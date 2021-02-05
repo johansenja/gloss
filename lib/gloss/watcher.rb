@@ -36,11 +36,17 @@ module Gloss
 .each() { |f|
           puts("====> Rewriting #{f}")
           content = File.read(f)
-          Writer.new(Builder.new(Parser.new(content)
+          err = catch(:"error") { ||
+            Writer.new(Builder.new(Parser.new(content)
 .run)
 .run, f)
 .run
-          puts("====> Done")
+nil          }
+          (if err
+            puts(err)
+          else
+            puts("====> Done")
+          end)
         }
         removed.each() { |f|
           out_path = Utils.src_path_to_output_path(f)

@@ -31,15 +31,21 @@ module Gloss
         (modified + added).each do |f|
           puts "====> Rewriting #{f}"
           content = File.read(f)
-          Writer.new(
-            Builder.new(
-              Parser.new(
-                content
-              ).run
-            ).run, f
-          ).run
-
-          puts "====> Done"
+          err = catch :error do
+            Writer.new(
+              Builder.new(
+                Parser.new(
+                  content
+                ).run
+              ).run, f
+            ).run
+            nil
+          end
+          if err
+            puts err
+          else
+            puts "====> Done"
+          end
         end
         removed.each do |f|
           out_path = Utils.src_path_to_output_path(f)
