@@ -8,10 +8,9 @@ module Gloss
     (if @logger
       @logger
     else
-      @logger = Logger.new(STDOUT)
       env_log_level = ENV.fetch("LOG_LEVEL") { ||
 "INFO"      }
-      @logger.level=({"UNKNOWN" => Logger::UNKNOWN,
+      real_log_level = {"UNKNOWN" => Logger::UNKNOWN,
 "FATAL" => Logger::FATAL,
 "ERROR" => Logger::ERROR,
 "WARN" => Logger::WARN,
@@ -19,7 +18,12 @@ module Gloss
 "DEBUG" => Logger::DEBUG,
 "NIL" => nil,
 nil => nil,
-"" => nil}.fetch(env_log_level))
+"" => nil}.fetch(env_log_level)
+      @logger = Logger.new((if real_log_level
+        STDOUT
+      else
+        nil
+      end))
       formatter = Logger::Formatter.new
       @logger.formatter=(proc() { |severity, datetime, progname, msg|
         formatter.call(severity, datetime, progname, msg)
