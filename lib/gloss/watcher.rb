@@ -10,20 +10,43 @@ module Gloss
       @paths = paths
       (if @paths.empty?
         @paths = [File.join(Dir.pwd, Config.src_dir)]
+        @only = /\.gl$/
+      else
+        file_names = Array.new
+        paths = Array.new
+        @paths.each() { |pa|
+          pn = Pathname.new(pa)
+          paths.<<(pn.parent
+.to_s)
+          file_names.<<((if pn.file?
+            pn.basename
+.to_s
+          else
+            pa
+          end))
+        }
+        @paths = paths.uniq
+        @only = /#{Regexp.union(file_names)}/
       end)
     end
     def watch()
       puts("=====> Now listening for changes in #{@paths.join(", ")}")
-      listener = Listen.to(*@paths, latency: 2, only: /\.gl$/) { |modified, added, removed|
+      listener = Listen.to(*@paths, latency: 2, only: @only) { |modified, added, removed|
         modified.+(added)
 .each() { |f|
           puts("====> Rewriting #{f}")
           content = File.read(f)
-          Writer.new(Builder.new(Parser.new(content)
+          err = catch(:"error") { ||
+            Writer.new(Builder.new(Parser.new(content)
 .run)
 .run, f)
 .run
-          puts("====> Done")
+nil          }
+          (if err
+            puts(err)
+          else
+            puts("====> Done")
+          end)
         }
         removed.each() { |f|
           out_path = Utils.src_path_to_output_path(f)
@@ -34,11 +57,9 @@ module Gloss
           puts("====> Done")
         }
       }
-      listener.start
       begin
-        loop() { ||
-          sleep(10)
-        }
+        listener.start
+        sleep
       rescue Interrupt
         puts("=====> Interrupt signal received, shutting down")
         exit(0)

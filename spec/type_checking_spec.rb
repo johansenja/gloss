@@ -34,7 +34,11 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
+    expect { type_checker.run(output) }.to throw_symbol :error
+    err = catch :error do
+      type_checker.run output
+    end
+    expect(err).to eq "Invalid return type - expected: ::Integer, actual: ::String"
   end
 
   it "reports type errors for human error" do
@@ -100,67 +104,71 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
+    expect { type_checker.run(output) }.to throw_symbol :error
+    err = catch :error do
+      type_checker.run output
+    end
+    expect(err).to eq "Unknown method :length, location: nil"
   end
 
   it "reports no errors for valid code" do
     output = Gloss::Builder.new(
       {
-        type:"CollectionNode",
-        children:[{
-          type:"ClassNode",
-          name:{
-            type:"Path",
-            value:"MyClass"
+        type: "CollectionNode",
+        children: [{
+          type: "ClassNode",
+          name: {
+            type: "Path",
+            value: "MyClass",
           },
-          body:{
-            type:"DefNode",
-            name:"int",
-            body:{
-              type:"Return",
-              value:{
-                type:"LiteralNode",
-                value:"100",
-                rb_type:"Integer"
-              }
-            },
-            rp_args:[],
-            receiver:nil,
-            return_type:{
-              type:"Path",
-              value:"Integer"
-            },
-            rest_kw_args:nil
-          },
-          superclass:nil,
-          type_vars:nil,
-          abstract:false
-        },
-        {
-          type:"Call",
-          name:"positive?",
-          args:[],
-          object:{
-            type:"Call",
-            name:"int",
-            args:[],
-            object:{
-              type:"Call",
-              name:"new",
-              args:[],
-              object:{
-                type:"Path",
-                value:"MyClass"
+          body: {
+            type: "DefNode",
+            name: "int",
+            body: {
+              type: "Return",
+              value: {
+                type: "LiteralNode",
+                value: "100",
+                rb_type: "Integer",
               },
-              block:nil,
-              block_arg:nil
             },
-            block:nil,
-            block_arg:nil
+            rp_args: [],
+            receiver: nil,
+            return_type: {
+              type: "Path",
+              value: "Integer",
+            },
+            rest_kw_args: nil,
           },
-          block:nil,
-          block_arg:nil
-        }]
+          superclass: nil,
+          type_vars: nil,
+          abstract: false,
+        },
+                   {
+          type: "Call",
+          name: "positive?",
+          args: [],
+          object: {
+            type: "Call",
+            name: "int",
+            args: [],
+            object: {
+              type: "Call",
+              name: "new",
+              args: [],
+              object: {
+                type: "Path",
+                value: "MyClass",
+              },
+              block: nil,
+              block_arg: nil,
+            },
+            block: nil,
+            block_arg: nil,
+          },
+          block: nil,
+          block_arg: nil,
+        }],
       },
       type_checker
     ).run
@@ -170,45 +178,49 @@ RSpec.describe Gloss::TypeChecker do
   it "reports errors for invalid variables" do
     output = Gloss::Builder.new(
       {
-        type:"TypeDeclaration",
-        var:{
-          type:"Var",
-          name:"str"
+        type: "TypeDeclaration",
+        var: {
+          type: "Var",
+          name: "str",
         },
-        declared_type:{
-          type:"Path",
-          value:"Symbol"
+        declared_type: {
+          type: "Path",
+          value: "Symbol",
         },
-        value:{
-          type:"LiteralNode",
-          value:"\"abc\"",
-          rb_type:"String"
+        value: {
+          type: "LiteralNode",
+          value: "\"abc\"",
+          rb_type: "String",
         },
-        var_type:"Var"
+        var_type: "Var",
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
+    expect { type_checker.run(output) }.to throw_symbol :error
+    err = catch :error do
+      type_checker.run output
+    end
+    expect(err).to eq "Invalid assignment - cannot assign ::String to type ::Symbol"
   end
 
   it "does not report errors for valid variables" do
     output = Gloss::Builder.new(
       {
-        type:"TypeDeclaration",
-        var:{
-          type:"Var",
-          name:"str"
+        type: "TypeDeclaration",
+        var: {
+          type: "Var",
+          name: "str",
         },
-        declared_type:{
-          type:"Path",
-          value:"String"
+        declared_type: {
+          type: "Path",
+          value: "String",
         },
-        value:{
-          type:"LiteralNode",
-          value:"\"abc\"",
-          rb_type:"String"
+        value: {
+          type: "LiteralNode",
+          value: "\"abc\"",
+          rb_type: "String",
         },
-        var_type:"Var"
+        var_type: "Var",
       },
       type_checker
     ).run
@@ -218,40 +230,74 @@ RSpec.describe Gloss::TypeChecker do
   it "reports errors when changing a variable's type" do
     output = Gloss::Builder.new(
       {
-        type:"CollectionNode",
-        children:[{
-          type:"TypeDeclaration",
-          var:{
-            type:"Var",
-            name:"str"
+        type: "CollectionNode",
+        children: [{
+          type: "TypeDeclaration",
+          var: {
+            type: "Var",
+            name: "str",
           },
-          declared_type:{
-            type:"Path",
-            value:"String"
+          declared_type: {
+            type: "Path",
+            value: "String",
           },
-          value:{
-            type:"LiteralNode",
-            value:"\"abc\"",
-            rb_type:"String"
+          value: {
+            type: "LiteralNode",
+            value: "\"abc\"",
+            rb_type: "String",
           },
-          var_type:"Var"
+          var_type: "Var",
         },
-        {
-          type:"Assign",
-          op:nil,
-          target:{
-            type:"Var",
-            name:"str"
+                   {
+          type: "Assign",
+          op: nil,
+          target: {
+            type: "Var",
+            name: "str",
           },
-          value:{
-            type:"LiteralNode",
-            value:":abc",
-            rb_type:"Symbol"
-          }
-        }]
+          value: {
+            type: "LiteralNode",
+            value: ":abc",
+            rb_type: "Symbol",
+          },
+        }],
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to raise_error(Gloss::Errors::TypeError)
+    expect { type_checker.run(output) }.to throw_symbol :error
+    err = catch :error do
+      type_checker.run output
+    end
+    expect(err).to eq "Invalid assignment - cannot assign ::Symbol to type ::String"
+  end
+
+  it "throws :error is passed invalid ruby code" do
+    ruby_code = "puts 'hello "
+    expect { type_checker.run(ruby_code) }.to throw_symbol :error
+    msg = catch :error do
+      type_checker.run ruby_code
+    end
+
+    expect(msg).to eq "Parser::SyntaxError: unterminated string meets end of file"
+  end
+
+  it "throws :error with invalid rbs signatures" do
+    Dir.chdir TESTING_DIR do
+      File.open "sig/a.rbs", "wb" do |f|
+        f.puts "invalid"
+      end
+
+      ruby_code = "puts 'hello "
+      expect { type_checker.run(ruby_code) }.to throw_symbol :error
+      msg = catch :error do
+        type_checker.run ruby_code
+      end
+
+      expect(msg).to eq(<<-MSG.rstrip)
+  SignatureSyntaxError:
+    Location: sig/a.rbs:1:0...1:7
+    Message: "invalid"
+MSG
+    end
   end
 end

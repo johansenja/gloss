@@ -3,4 +3,17 @@
 require "bundler/setup"
 require "gloss"
 
-Gloss::CLI.new(ARGV).run
+begin
+  Gloss::CLI.new(ARGV).run
+rescue SystemExit
+  # raised by `abort` or `exit`; no op
+rescue => e
+  abort <<~MSG
+    Unexpected error: #{e.class.name}
+    Message: #{e.message}
+    Trace:
+      #{e.backtrace.join("\n")}
+
+    This is probably a bug and may warrant a bug report at https://github.com/johansenja/gloss/issues
+  MSG
+end

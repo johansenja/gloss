@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+      require "pry-byebug"
 
 module Gloss
   class TypeChecker
@@ -20,27 +21,37 @@ module Gloss
     end
 
     def run(rb_str)
-      unless check_types(rb_str)
-        raise Errors::TypeError,
-              @steep_target.errors.map { |e|
-                case e
-                when Steep::Errors::NoMethod
-                  "Unknown method :#{e.method}, location: #{e.type.location.inspect}"
-                when Steep::Errors::MethodBodyTypeMismatch
-                  "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleArguments
-                  <<-ERR
-                    Invalid argmuents - method type: #{e.method_type}
-                                        method name: #{e.method_type.method_decls.first.method_name}
-                  ERR
-                when Steep::Errors::ReturnTypeMismatch
-                  "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
-                when Steep::Errors::IncompatibleAssignment
-                  "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
-                else
-                  e.inspect
-                end
-              }.join("\n")
+      begin
+        valid_types = check_types rb_str
+      rescue ParseError => e
+        throw :error, ""
+      rescue => e
+        throw :error, "Type checking Error: #{e.message} (#{e.class})"
+      end
+
+      unless valid_types
+        errors = @steep_target.errors.map { |e|
+          case e
+            when Steep::Diagnostic::Ruby::NoMethod
+              "Unknown method :#{e.method}, location: #{e.type.location.inspect}"
+            when Steep::Diagnostic::Ruby::MethodBodyTypeMismatch
+              "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
+            when Steep::Diagnostic::Ruby::IncompatibleArguments
+              <<-ERR
+              Invalid argmuents - method type: #{e.method_type}
+              method name: #{e.method_type.method_decls.first.method_name}
+              ERR
+            when Steep::Diagnostic::Ruby::ReturnTypeMismatch
+              "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
+            when Steep::Diagnostic::Ruby::IncompatibleAssignment
+              "Invalid assignment - cannot assign #{e.rhs_type} to type #{e.lhs_type}"
+            when Steep::Diagnostic::Ruby::UnexpectedBlockGiven
+              "Unexpected block given"
+            else
+              e.inspect
+            end
+        }.join("\n")
+        throw :error, errors
       end
 
       true
@@ -64,6 +75,23 @@ module Gloss
       @steep_target.instance_variable_set("@environment", env)
 
       @steep_target.type_check
+
+      if @steep_target.status.is_a? Steep::Project::Target::SignatureErrorStatus
+        throw :error, @steep_target.status.errors.map { |e|
+          <<~MSG
+            SignatureSyntaxError:
+              Location: #{e.location}
+              Message: "#{e.exception.error_value.value}"
+          MSG
+        }.join("\n")
+      end
+
+      @steep_target.source_files.each do |path, f|
+        if f.status.is_a? Steep::Project::SourceFile::ParseErrorStatus
+          e = f.status.error
+          throw :error, "#{e.class}: #{e.message}"
+        end
+      end
 
       @steep_target.status.is_a?(Steep::Project::Target::TypeCheckStatus) &&
         @steep_target.no_error? &&

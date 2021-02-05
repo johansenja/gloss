@@ -5,24 +5,47 @@ require "listen"
 module Gloss
   class Watcher
     def initialize(@paths : Array[String])
-      @paths = [File.join(Dir.pwd, Config.src_dir)] if @paths.empty?
+      if @paths.empty?
+        @paths = [File.join(Dir.pwd, Config.src_dir)]
+        @only = /\.gl$/
+      else
+        file_names = Array.new
+        paths = Array.new
+        @paths.each do |pa|
+          pn = Pathname.new(pa)
+          paths << pn.parent.to_s
+          file_names << (pn.file? ? pn.basename.to_s : pa)
+        end
+        @paths = paths.uniq
+        @only = /#{Regexp.union(file_names)}/
+      end
     end
 
     def watch
       puts "=====> Now listening for changes in #{@paths.join(', ')}"
-      listener = Listen.to(*@paths, latency: 2, only: /\.gl$/) do |modified, added, removed|
+      listener = Listen.to(
+        *@paths,
+        latency: 2,
+        only: @only
+      ) do |modified, added, removed|
         (modified + added).each do |f|
           puts "====> Rewriting #{f}"
           content = File.read(f)
-          Writer.new(
-            Builder.new(
-              Parser.new(
-                content
-              ).run
-            ).run, f
-          ).run
-
-          puts "====> Done"
+          err = catch :error do
+            Writer.new(
+              Builder.new(
+                Parser.new(
+                  content
+                ).run
+              ).run, f
+            ).run
+            nil
+          end
+          if err
+            puts err
+          else
+            puts "====> Done"
+          end
         end
         removed.each do |f|
           out_path = Utils.src_path_to_output_path(f)
@@ -32,9 +55,9 @@ module Gloss
           puts "====> Done"
         end
       end
-      listener.start
       begin
-        loop { sleep 10 }
+        listener.start
+        sleep
       rescue Interrupt
         puts "=====> Interrupt signal received, shutting down"
         exit 0
