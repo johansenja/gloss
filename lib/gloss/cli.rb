@@ -11,47 +11,57 @@ module Gloss
     end
     def run()
       command = @argv.first
-      files = @argv.[]((1..-1))
+      files = @argv.[](((1)..(-1)))
       err_msg = catch(:"error") { ||
-        begin
-          case command
-            when "watch"
-              Watcher.new(files)
-.watch
-            when "build"
-              (if files.empty?
-                Dir.glob("#{Config.src_dir}/**/*.gl")
+case command
+          when "watch"
+            files = files.map() { |f|
+              path = (if Pathname.new(f)
+.absolute?
+                f
               else
-                files
+                File.join(Dir.pwd, f)
               end)
-.each() { |fp|
-                puts("=====> Building #{fp}")
-                content = File.read(fp)
-                tree_hash = Parser.new(content)
-.run
-                type_checker = TypeChecker.new
-                rb_output = Builder.new(tree_hash, type_checker)
-.run
-                type_checker.run(rb_output)
-                puts("=====> Writing #{fp}")
-                Writer.new(rb_output, fp)
-.run
-              }
-            when "init"
-              force = false
-              OptionParser.new() { |opt|
-                opt.on("--force", "-f") { ||
-                  force = true
-                }
-              }
-.parse(@argv)
-              Initializer.new(force)
-.run
+              (if Pathname.new(path)
+.exist?
+                path
+              else
+                throw(:"error", "Pathname #{f} does not exist")
+              end)
+            }
+            Watcher.new(files)
+.watch
+          when "build"
+            (if files.empty?
+              Dir.glob("#{Config.src_dir}/**/*.gl")
             else
-              throw(:"error", "Gloss doesn't know how to #{command}")
-          end
-        rescue  => e
-          throw(:"error", e.message)
+              files
+            end)
+.each() { |fp|
+              puts("=====> Building #{fp}")
+              content = File.read(fp)
+              tree_hash = Parser.new(content)
+.run
+              type_checker = TypeChecker.new
+              rb_output = Builder.new(tree_hash, type_checker)
+.run
+              type_checker.run(rb_output)
+              puts("=====> Writing #{fp}")
+              Writer.new(rb_output, fp)
+.run
+            }
+          when "init"
+            force = false
+            OptionParser.new() { |opt|
+              opt.on("--force", "-f") { ||
+                force = true
+              }
+            }
+.parse(@argv)
+            Initializer.new(force)
+.run
+          else
+            throw(:"error", "Gloss doesn't know how to #{command}")
         end
 nil      }
       (if err_msg

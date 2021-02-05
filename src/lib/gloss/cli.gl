@@ -11,33 +11,37 @@ module Gloss
       command = @argv.first
       files = @argv[1..-1]
       err_msg = catch :error do
-        begin
-          case command
-          when "watch"
-            Watcher.new(files).watch
-          when "build"
-            (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
-              puts "=====> Building #{fp}"
-              content = File.read(fp)
-              tree_hash = Parser.new(content).run
-              type_checker = TypeChecker.new
-              rb_output = Builder.new(tree_hash, type_checker).run
-              type_checker.run(rb_output)
-
-              puts "=====> Writing #{fp}"
-              Writer.new(rb_output, fp).run
+        case command
+        when "watch"
+          files = files.map do |f|
+            path = Pathname.new(f).absolute? ? f : File.join(Dir.pwd, f)
+            if Pathname.new(path).exist?
+              path
+            else
+              throw :error, "Pathname #{f} does not exist"
             end
-          when "init"
-            force = false
-            OptionParser.new do |opt|
-              opt.on("--force", "-f") { force = true }
-            end.parse(@argv)
-            Initializer.new(force).run
-          else
-            throw :error, "Gloss doesn't know how to #{command}"
           end
-        rescue => e
-          throw :error, e.message
+          Watcher.new(files).watch
+        when "build"
+          (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
+            puts "=====> Building #{fp}"
+            content = File.read(fp)
+            tree_hash = Parser.new(content).run
+            type_checker = TypeChecker.new
+            rb_output = Builder.new(tree_hash, type_checker).run
+            type_checker.run(rb_output)
+
+            puts "=====> Writing #{fp}"
+            Writer.new(rb_output, fp).run
+          end
+        when "init"
+          force = false
+          OptionParser.new do |opt|
+            opt.on("--force", "-f") { force = true }
+          end.parse(@argv)
+          Initializer.new(force).run
+        else
+          throw :error, "Gloss doesn't know how to #{command}"
         end
         nil
       end
