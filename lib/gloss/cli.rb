@@ -38,7 +38,8 @@ case command
               files
             end)
 .each() { |fp|
-              puts("=====> Building #{fp}")
+              Gloss.logger
+.info("Building #{fp}")
               content = File.read(fp)
               tree_hash = Parser.new(content)
 .run
@@ -46,7 +47,8 @@ case command
               rb_output = Builder.new(tree_hash, type_checker)
 .run
               type_checker.run(rb_output)
-              puts("=====> Writing #{fp}")
+              Gloss.logger
+.info("Writing #{fp}")
               Writer.new(rb_output, fp)
 .run
             }

@@ -18,7 +18,8 @@ module Gloss
 .transform_keys(&:"to_s")
 .to_yaml)
       }
-      puts("Created #{CONFIG_PATH} with default preferences")
+      Gloss.logger
+.info("Created #{CONFIG_PATH} with default preferences")
     end
   end
 end

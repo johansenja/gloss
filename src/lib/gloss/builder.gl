@@ -113,7 +113,8 @@ module Gloss
         src.write_ln "end"
       when "DefNode"
         args = render_args(node)
-        src.write_ln "def #{node[:name]}#{args[:representation]}"
+        receiver = node[:receiver] ? visit_node(node[:receiver]) : nil
+        src.write_ln "def #{"#{receiver}." if receiver}#{node[:name]}#{args[:representation]}"
 
         return_type = if node[:return_type]
                         RBS::Types::ClassInstance.new(
@@ -162,7 +163,7 @@ module Gloss
         ]
         method_definition = RBS::AST::Members::MethodDefinition.new(
           name: node[:name].to_sym,
-          kind: :instance,
+          kind: receiver ? :class : :instance,
           types: method_types,
           annotations: EMPTY_ARRAY, # TODO
           location: node[:location],
@@ -297,12 +298,12 @@ module Gloss
         contents = node[:elements].map do |k, v|
           key = case k
                 when String
-                  k.to_sym
+                  k.to_sym.inspect
                 else
                   visit_node k
                 end
           value = visit_node v
-          "#{key.inspect} => #{value}"
+          "#{key} => #{value}"
         end
 
         src.write "{#{contents.join(",\n")}}"

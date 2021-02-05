@@ -107,7 +107,14 @@ case node.[](:"type")
           src.write_ln("end")
         when "DefNode"
           args = render_args(node)
-          src.write_ln("def #{node.[](:"name")}#{args.[](:"representation")}")
+          receiver = (if node.[](:"receiver")
+            visit_node(node.[](:"receiver"))
+          else
+            nil
+          end)
+          src.write_ln("def #{(if receiver
+            "#{receiver}."
+          end)}#{node.[](:"name")}#{args.[](:"representation")}")
           return_type = (if node.[](:"return_type")
             RBS::Types::ClassInstance.new(name:             RBS::TypeName.new(name:             eval(visit_node(node.[](:"return_type")))
 .to_s
@@ -121,7 +128,11 @@ case node.[](:"type")
             nil
           end), location:           node.[](:"location"))]
           method_definition = RBS::AST::Members::MethodDefinition.new(name:           node.[](:"name")
-.to_sym, kind: :"instance", types: method_types, annotations: EMPTY_ARRAY, location:           node.[](:"location"), comment:           node.[](:"comment"), overload: false)
+.to_sym, kind:           (if receiver
+            :"class"
+          else
+            :"instance"
+          end), types: method_types, annotations: EMPTY_ARRAY, location:           node.[](:"location"), comment:           node.[](:"comment"), overload: false)
           (if @current_scope
             @current_scope.members
 .<<(method_definition)
@@ -216,7 +227,7 @@ EMPTY_ARRAY          }
             str.<<(case c.[](:"type")
               when "LiteralNode"
                 c.[](:"value")
-.[]((1...-1))
+.[](((1)...(-1)))
               else
                 ["\#{", visit_node(c)
 .strip, "}"].join
@@ -278,11 +289,12 @@ EMPTY_ARRAY          }
             key = case k
               when String
                 k.to_sym
+.inspect
               else
                 visit_node(k)
             end
             value = visit_node(v)
-"#{key.inspect} => #{value}"          }
+"#{key} => #{value}"          }
           src.write("{#{contents.join(",\n")}}")
           (if node.[](:"frozen")
             src.write(".freeze")

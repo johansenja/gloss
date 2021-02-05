@@ -30,11 +30,13 @@ module Gloss
       end)
     end
     def watch()
-      puts("=====> Now listening for changes in #{@paths.join(", ")}")
+      Gloss.logger
+.info("Now listening for changes in #{@paths.join(", ")}")
       listener = Listen.to(*@paths, latency: 2, only: @only) { |modified, added, removed|
         modified.+(added)
 .each() { |f|
-          puts("====> Rewriting #{f}")
+          Gloss.logger
+.info("Rewriting #{f}")
           content = File.read(f)
           err = catch(:"error") { ||
             Writer.new(Builder.new(Parser.new(content)
@@ -43,25 +45,30 @@ module Gloss
 .run
 nil          }
           (if err
-            puts(err)
+            Gloss.logger
+.error(err)
           else
-            puts("====> Done")
+            Gloss.logger
+.info("Done")
           end)
         }
         removed.each() { |f|
           out_path = Utils.src_path_to_output_path(f)
-          puts("====> Removing #{out_path}")
+          Gloss.logger
+.info("Removing #{out_path}")
           (if File.exist?(out_path)
             File.delete(out_path)
           end)
-          puts("====> Done")
+          Gloss.logger
+.info("Done")
         }
       }
       begin
         listener.start
         sleep
       rescue Interrupt
-        puts("=====> Interrupt signal received, shutting down")
+        Gloss.logger
+.info("Interrupt signal received, shutting down")
         exit(0)
       end
     end
