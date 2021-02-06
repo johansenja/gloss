@@ -46,7 +46,10 @@ module Gloss
         nil
       end
 
-      abort err_msg if err_msg
+      if err_msg
+        Gloss.logger.fatal err_msg
+        exit 1
+      end
     end
   end
 end

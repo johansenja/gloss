@@ -8,7 +8,7 @@ begin
 rescue SystemExit
   # raised by `abort` or `exit`; no op
 rescue => e
-  abort <<~MSG
+  Gloss.logger.fatal <<~MSG
     Unexpected error: #{e.class.name}
     Message: #{e.message}
     Trace:
@@ -16,4 +16,5 @@ rescue => e
 
     This is probably a bug and may warrant a bug report at https://github.com/johansenja/gloss/issues
   MSG
+  exit 1
 end

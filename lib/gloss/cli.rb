@@ -67,7 +67,8 @@ case command
         end
 nil      }
       (if err_msg
-        abort(err_msg)
+       Gloss.logger.fatal(err_msg)
+       exit(1)
       end)
     end
   end
