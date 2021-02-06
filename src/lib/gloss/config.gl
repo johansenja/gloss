@@ -9,6 +9,7 @@ module Gloss
     default_config: {
       frozen_string_literals: true,
       src_dir: "src",
+      entrypoint: "src/lib/gloss.gl"
     }
   )
 
