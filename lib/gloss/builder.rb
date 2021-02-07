@@ -426,7 +426,8 @@ EMPTY_ARRAY          }
           src.write("return#{val}")
         when "TypeDeclaration"
           src.write_ln("# @type var #{visit_node(node.[](:"var"))}: #{visit_node(node.[](:"declared_type"))}")
-          src.write_ln("#{visit_node(node.[](:"var"))} = #{visit_node(node.[](:"value"))}")
+          value = node[:value] ? " = #{visit_node node[:value]}" : nil
+          src.write_ln "#{visit_node(node[:var])}#{value}"
         when "ExceptionHandler"
           src.write_ln("begin")
           indented(src) { ||
