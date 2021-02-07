@@ -202,7 +202,9 @@ module Gloss
                             else
                               nil
                             end
-        call = "#{obj}#{node[:name]}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
+        name = node[:name]
+        call = "#{obj}#{name}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
+        yield require_relative_path_to_file_path(name) if block_given?
         src.write_ln(call)
 
       when "Block"
@@ -247,9 +249,10 @@ module Gloss
         src.write node[:value]
 
       when "Require"
+        path = node[:value]
+        src.write_ln %(require "#{path}")
 
-        src.write_ln %(require "#{node[:value]}")
-
+        yield require_path_to_file_path(path) if block_given?
       when "Assign", "OpAssign"
 
         src.write_ln "#{visit_node(node[:target])} #{node[:op]}= #{visit_node(node[:value]).strip}"
@@ -541,6 +544,34 @@ module Gloss
             ) : nil
         }
       }
+    end
+
+    REQUIRE_LOAD_PATH = [File.join(Dir.pwd, "lib"), *$LOAD_PATH]
+    REQUIRE_FILE_EXTENSIONS = ["", ".gl", ".rb"]
+
+    private def require_path_to_file_path(path : String) : String
+      if path.start_with? "."
+        File.join(Dir.pwd, path)
+      else
+        REQUIRE_LOAD_PATH.each do |path|
+          REQUIRE_FILE_EXTENSIONS.each do |ext|
+            full = path + ext
+            return full if File.exist? full
+          end
+        end
+      end
+
+      throw :error, "Cannot resolve path for #{path}"
+    end
+
+    private def require_relative_path_to_file_path(path : String) : String
+      base = working_file_dir = File.join(@filepath, "..", path)
+      REQUIRE_FILE_EXTENSIONS.each |ext|
+        full = base + ext
+        return full if File.exist? full
+      end
+
+      throw :error, "Cannot resolve path for #{path}"
     end
   end
 end

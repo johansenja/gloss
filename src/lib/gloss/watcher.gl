@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "listen"
 
 module Gloss
@@ -7,7 +5,8 @@ module Gloss
     def initialize(@paths : Array[String])
       if @paths.empty?
         @paths = [File.join(Dir.pwd, Config.src_dir)]
-        @only = /\.gl$/
+        # either any filepath with .gl extension, or executable with extension
+        @only = /(?:(\.gl|(?:(?<=\/)[^\.\/]+))\z|\A[^\.\/]+\z)/
       else
         file_names = Array.new
         paths = Array.new

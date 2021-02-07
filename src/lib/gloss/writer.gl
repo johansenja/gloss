@@ -18,7 +18,7 @@ module Gloss
 
     def initialize(
       @content,
-      src_path : String,
+      @src_path : String,
       @output_path : Pathname? = Pathname.new(src_path_to_output_path(src_path))
     )
     end
@@ -26,7 +26,18 @@ module Gloss
     def run
       FileUtils.mkdir_p(@output_path.parent) unless @output_path.parent.exist?
       File.open(@output_path, "wb") do |file|
+        sb = shebang
+        file.puts sb if sb
         file.puts @content
+      end
+    end
+
+    private def shebang
+      if @output_path.end_with? ".rb"
+        nil
+      else
+        first_line = File.open(@src_path, &:readline)
+        first_line.start_with? "#!" ? first_line : nil
       end
     end
   end

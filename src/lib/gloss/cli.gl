@@ -12,34 +12,40 @@ module Gloss
       files = @argv[1..-1]
       err_msg = catch :error do
         case command
-        when "watch"
-          files = files.map do |f|
-            path = Pathname.new(f).absolute? ? f : File.join(Dir.pwd, f)
-            if Pathname.new(path).exist?
-              path
-            else
-              throw :error, "Pathname #{f} does not exist"
-            end
-          end
-          Watcher.new(files).watch
-        when "build"
-          (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
-            Gloss.logger.info "Building #{fp}"
-            content = File.read(fp)
-            tree_hash = Parser.new(content).run
-            type_checker = TypeChecker.new
-            rb_output = Builder.new(tree_hash, type_checker).run
-            type_checker.run(rb_output)
-
-            Gloss.logger.info "Writing #{fp}"
-            Writer.new(rb_output, fp).run
-          end
         when "init"
           force = false
           OptionParser.new do |opt|
             opt.on("--force", "-f") { force = true }
           end.parse(@argv)
           Initializer.new(force).run
+        when "version", "--version", "-v"
+          puts Gloss::VERSION
+        when "watch", "build"
+          type_checker = ProgLoader.new.run
+          if command == "watch"
+            files = files.map do |f|
+              path = Pathname.new(f).absolute? ? f : File.join(Dir.pwd, f)
+              if Pathname.new(path).exist?
+                path
+              else
+                throw :error, "Pathname #{f} does not exist"
+              end
+            end
+            Watcher.new(files).watch
+          elsif command == "build"
+            entry_tree = Parser.new(File.read(Config.entrypoint)).run
+            Builder.new(entry_tree, type_checker).run
+            (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
+              Gloss.logger.info "Building #{fp}"
+              content = File.read(fp)
+              tree_hash = Parser.new(content).run
+              rb_output = Builder.new(tree_hash, type_checker).run
+              type_checker.run(rb_output)
+
+              Gloss.logger.info "Writing #{fp}"
+              Writer.new(rb_output, fp).run
+            end
+          end
         else
           throw :error, "Gloss doesn't know how to #{command}"
         end
