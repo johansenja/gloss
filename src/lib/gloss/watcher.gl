@@ -32,7 +32,7 @@ module Gloss
           content = File.read(f)
           err = catch :error do
             Writer.new(
-              Builder.new(
+              Visitor.new(
                 Parser.new(
                   content
                 ).run

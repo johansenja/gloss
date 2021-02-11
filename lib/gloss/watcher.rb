@@ -39,7 +39,7 @@ module Gloss
 .info("Rewriting #{f}")
           content = File.read(f)
           err = catch(:"error") { ||
-            Writer.new(Builder.new(Parser.new(content)
+            Writer.new(Visitor.new(Parser.new(content)
 .run)
 .run, f)
 .run

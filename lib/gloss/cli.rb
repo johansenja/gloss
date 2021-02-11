@@ -14,44 +14,6 @@ module Gloss
       files = @argv.[](((1)..(-1)))
       err_msg = catch(:"error") { ||
 case command
-          when "watch"
-            files = files.map() { |f|
-              path = (if Pathname.new(f)
-.absolute?
-                f
-              else
-                File.join(Dir.pwd, f)
-              end)
-              (if Pathname.new(path)
-.exist?
-                path
-              else
-                throw(:"error", "Pathname #{f} does not exist")
-              end)
-            }
-            Watcher.new(files)
-.watch
-          when "build"
-            (if files.empty?
-              Dir.glob("#{Config.src_dir}/**/*.gl")
-            else
-              files
-            end)
-.each() { |fp|
-              Gloss.logger
-.info("Building #{fp}")
-              content = File.read(fp)
-              tree_hash = Parser.new(content)
-.run
-              type_checker = TypeChecker.new
-              rb_output = Builder.new(tree_hash, type_checker)
-.run
-              type_checker.run(rb_output)
-              Gloss.logger
-.info("Writing #{fp}")
-              Writer.new(rb_output, fp)
-.run
-            }
           when "init"
             force = false
             OptionParser.new() { |opt|
@@ -62,13 +24,59 @@ case command
 .parse(@argv)
             Initializer.new(force)
 .run
+          when "version", "--version", "-v"
+            puts(Gloss::VERSION)
+          when "watch", "build"
+            type_checker = ProgLoader.new
+.run
+            (if command.==("watch")
+              files = files.map() { |f|
+                path = (if Pathname.new(f)
+.absolute?
+                  f
+                else
+                  File.join(Dir.pwd, f)
+                end)
+                (if Pathname.new(path)
+.exist?
+                  path
+                else
+                  throw(:"error", "Pathname #{f} does not exist")
+                end)
+              }
+              Watcher.new(files)
+.watch
+            else
+              (if command.==("build")
+                entry_tree = Parser.new(File.read(Config.entrypoint))
+.run
+                Visitor.new(entry_tree, type_checker)
+.run
+                (if files.empty?
+                  Dir.glob("#{Config.src_dir}/**/*.gl")
+                else
+                  files
+                end)
+.each() { |fp|
+  Gloss.logger.info("Building #{fp}")
+                  content = File.read(fp)
+                  tree_hash = Parser.new(content)
+.run
+                  rb_output = Visitor.new(tree_hash, type_checker)
+.run
+                  type_checker.run(rb_output)
+                  Gloss.logger.info("Writing #{fp}")
+                  Writer.new(rb_output, fp)
+.run
+                }
+              end)
+            end)
           else
             throw(:"error", "Gloss doesn't know how to #{command}")
         end
 nil      }
       (if err_msg
-       Gloss.logger.fatal(err_msg)
-       exit(1)
+        abort(err_msg)
       end)
     end
   end

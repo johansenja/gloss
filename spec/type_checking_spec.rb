@@ -2,7 +2,7 @@ RSpec.describe Gloss::TypeChecker do
   let!(:type_checker) { Gloss::TypeChecker.new }
 
   it "reports type errors in type notations" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "ClassNode",
         name: {
@@ -42,7 +42,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports type errors for human error" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [
@@ -112,7 +112,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports no errors for valid code" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [{
@@ -176,7 +176,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports errors for invalid variables" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "TypeDeclaration",
         var: {
@@ -204,7 +204,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "does not report errors for valid variables" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "TypeDeclaration",
         var: {
@@ -228,7 +228,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports errors when changing a variable's type" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [{

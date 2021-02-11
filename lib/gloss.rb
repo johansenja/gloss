@@ -17,9 +17,10 @@ require "gloss/config"
 require "gloss/writer"
 require "gloss/source"
 require "gloss/scope"
-require "gloss/builder"
+require "gloss/visitor"
 require "gloss/errors"
 require "gloss/logger"
+require "gloss/prog_loader"
 is_ci = ENV.fetch("CI") { ||
 false}
 unless is_ci

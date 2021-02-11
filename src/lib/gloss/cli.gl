@@ -34,15 +34,15 @@ module Gloss
             Watcher.new(files).watch
           elsif command == "build"
             entry_tree = Parser.new(File.read(Config.entrypoint)).run
-            Builder.new(entry_tree, type_checker).run
+            Visitor.new(entry_tree, type_checker).run
             (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
-              Gloss.logger.info "Building #{fp}"
+              p "Building #{fp}"
               content = File.read(fp)
               tree_hash = Parser.new(content).run
-              rb_output = Builder.new(tree_hash, type_checker).run
+              rb_output = Visitor.new(tree_hash, type_checker).run
               type_checker.run(rb_output)
 
-              Gloss.logger.info "Writing #{fp}"
+              p "Writing #{fp}"
               Writer.new(rb_output, fp).run
             end
           end
@@ -52,10 +52,7 @@ module Gloss
         nil
       end
 
-      if err_msg
-        Gloss.logger.fatal err_msg
-        exit 1
-      end
+      abort err_msg if err_msg
     end
   end
 end

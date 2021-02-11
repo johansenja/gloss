@@ -39,17 +39,10 @@ module Gloss
         file_contents = File.open(path).read
         contents_tree = Parser.new(file_contents).run
         on_new_file_referenced = proc do |pa, relative|
-          pn = if relative
-                 require_relative_path_to_file_path pa
-               else
-                 require_path_to_file_path pa
-               end
-          if pn
-            @files_to_process << pn
-          elsif Config.strict_require
-            throw :error, "Cannot resolve require path for #{pa}"
+          if relative
+            handle_require_relative pa
           else
-            # no op
+            handle_require pa
           end
         end
         Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
@@ -59,13 +52,15 @@ module Gloss
       @type_checker
     end
 
+    private
+
     STDLIB_TYPE_DEPENDENCIES = {
       "yaml" => %w[pstore dbm],
       "rbs" => %w[logger set tsort],
       "logger" => %w[monitor],
     }
 
-    private def handle_require(path)
+    def handle_require(path)
       if path.start_with? "."
         base = File.join(Dir.pwd, path)
         fp = base + ".gl"
@@ -94,7 +89,7 @@ module Gloss
             @processed_files.add path
             rbs_type_deps = STDLIB_TYPE_DEPENDENCIES.fetch(path) { nil }
             if rbs_type_deps
-            rbs_type_deps.each { |d| handle_require d }
+              rbs_type_deps.each { |d| handle_require d }
             end
             return
           end
@@ -120,7 +115,7 @@ module Gloss
       end
     end
 
-    private def handle_require_relative(path)
+    def handle_require_relative(path)
       base = File.join(@filepath, "..", path)
       pn = nil
       Gem.suffixes.each do |ext|
@@ -137,11 +132,11 @@ module Gloss
       end
     end
 
-    private def rbs_stdlib_path_for(libr)
-      File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", libr))
+    def rbs_stdlib_path_for(lib)
+      File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", lib))
     end
 
-    private def load_rbs_from_require_path(path)
+    def load_rbs_from_require_path(path)
       Dir.glob(File.join(rbs_stdlib_path_for(path), "**", "*.rbs")).each do |fp|
         @type_checker.load_sig_path(fp)
         @processed_files.add fp

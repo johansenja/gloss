@@ -7,13 +7,20 @@ require "pry-byebug"
 module Gloss
   class TypeChecker
     Project = Struct.new(:"targets")
-    attr_reader(:"steep_target", :"top_level_decls")
+    attr_reader(:"steep_target", :"top_level_decls", :env, :rbs_gem_dir)
     def initialize()
       @steep_target = Steep::Project::Target.new(name: "gloss", options:       Steep::Project::Options.new
 .tap() { |o|
         o.allow_unknown_constant_assignment=(true)
       }, source_patterns: ["gloss.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
       @top_level_decls = {}
+      @rbs_gem_dir = `gem which rbs`.chomp
+      env_loader = RBS::EnvironmentLoader.new
+      @env = RBS::Environment.from_loader(env_loader)
+      project = Steep::Project.new(steepfile_path: Pathname.new(Config.src_dir).realpath)
+      project.targets << @steep_target
+      loader = Steep::Project::FileLoader.new(project: project)
+      # loader.load_signatures
     end
     def run(rb_str)
       begin
@@ -54,19 +61,11 @@ case e
 true
     end
     def check_types(rb_str)
-      env_loader = RBS::EnvironmentLoader.new
-      env = RBS::Environment.from_loader(env_loader)
-      project = Steep::Project.new(steepfile_path:       Pathname.new(Config.src_dir)
-.realpath)
-      project.targets
-.<<(@steep_target)
-      loader = Steep::Project::FileLoader.new(project: project)
-      loader.load_signatures
       @steep_target.add_source("gloss.rb", rb_str)
       @top_level_decls.each() { |_, decl|
-        env.<<(decl)
+        @env.<<(decl)
       }
-      env = env.resolve_type_names
+      @env = @env.resolve_type_names
       @steep_target.instance_variable_set("@environment", env)
       @steep_target.type_check
       (if @steep_target.status
@@ -74,9 +73,14 @@ true
         throw(:"error", @steep_target.status
 .errors
 .map() { |e|
-"  SignatureSyntaxError:\n    Location: #{e.location}\n    Message: \"#{e.exception
-.error_value
-.value}\""        }
+
+          msg = case e
+                when Steep::Diagnostic::Signature::UnknownTypeName
+                  "Unknown type name: #{e.name.name} (#{e.location.source[/^.*$/]})"
+                else
+                  e.exception.error_value.value
+                end
+"  SignatureSyntaxError:\n    Location: #{e.location}\n    Message: \"#{msg}\""        }
 .join("\n"))
       end)
       @steep_target.source_files
@@ -91,6 +95,12 @@ true
 @steep_target.status
 .is_a?(Steep::Project::Target::TypeCheckStatus) && @steep_target.no_error? && @steep_target.errors
 .empty?
+    end
+
+
+     def load_sig_path(path)
+      Gloss.logger.debug "Loading signature file for #{path}"
+      @steep_target.add_signature path, File.open(path).read
     end
   end
 end
