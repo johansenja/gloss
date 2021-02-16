@@ -14,7 +14,7 @@ module Gloss
         o.allow_unknown_constant_assignment=(true)
       }, source_patterns: ["gloss.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
       @top_level_decls = {}
-      @rbs_gem_dir = `gem which rbs`.chomp
+      @rbs_gem_dir = Utils.gem_path_for("rbs")
       env_loader = RBS::EnvironmentLoader.new
       @env = RBS::Environment.from_loader(env_loader)
       project = Steep::Project.new(steepfile_path: Pathname.new(Config.src_dir).realpath)
