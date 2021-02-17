@@ -31,7 +31,10 @@ module Gloss
       if entrypoint.nil? || entrypoint == ""
         throw :error, "Entrypoint is not yet set in .gloss.yml"
       end
-      @files_to_process = [absolute_path(Config.entrypoint)]
+      @files_to_process = [
+        absolute_path(Config.entrypoint),
+        absolute_path(File.join(__dir__, "..", "..", "sig", "core.rbs"))
+      ]
       @processed_files = Set.new
       @type_checker = TypeChecker.new
     end
