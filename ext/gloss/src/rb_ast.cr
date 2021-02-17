@@ -19,7 +19,7 @@ module Rb
     abstract class NodeWithChildren < Node
       @info : NamedTuple(type: String, children: Array(Node))
 
-      def initialize(@children : Array(Node))
+      def initialize(@children : Array(Node), location : Crystal::Location?)
         @info = {
           type:     self.class.name.split("::").last,
           children: @children,
@@ -32,7 +32,7 @@ module Rb
     abstract class NodeWithValue < Node
       @info : NamedTuple(type: String, value: String)
 
-      def initialize(@value : String)
+      def initialize(@value : String, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           value: @value,
@@ -45,7 +45,7 @@ module Rb
     class Block < Node
       @info : NamedTuple(type: String, positional_args: Array(Var), body: Node, rest_p_args: Node?)
 
-      def initialize(args, splat, body)
+      def initialize(args, splat, body, location : Crystal::Location?)
         @info = {
           type: self.class.name.split("::").last,
           body: body,
@@ -63,7 +63,7 @@ module Rb
     class ClassNode < Node
       @info : NamedTuple(type: String, name: Path, body: Node, superclass: Node?, type_vars: Array(String)?, abstract: Bool)
 
-      def initialize(name : Path, body : Node, superclass : Node?, type_vars : Array(String)?, abstr : Bool)
+      def initialize(name : Path, body : Node, superclass : Node?, type_vars : Array(String)?, abstr : Bool, location : Crystal::Location?)
         @info = {
           type:       self.class.name.split("::").last,
           name:       name,
@@ -81,7 +81,7 @@ module Rb
     class ModuleNode < Node
       @info : NamedTuple(type: String, name: Path, body: Node, type_vars: Array(String)?)
 
-      def initialize(name : Path, body : Node, type_vars : Array(String)?)
+      def initialize(name : Path, body : Node, type_vars : Array(String)?, location : Crystal::Location?)
         @info = {
           type:      self.class.name.split("::").last,
           name:      name,
@@ -107,7 +107,8 @@ module Rb
         body : Node,
         return_type : Node?,
         yields : Int32?,
-        block_arg : Node?
+        block_arg : Node?,
+        location : Crystal::Location?
       )
         @info = {
           type:            self.class.name.split("::").last,
@@ -130,7 +131,8 @@ module Rb
       @info : NamedTuple(type: String, name: String, external_name: String, value: Node?,
         restriction: Node?, keyword_arg: Bool)
 
-      def initialize(name : String, external_name : String, restriction : Node?, value : Node?, keyword_arg)
+      def initialize(name : String, external_name : String, restriction : Node?, value : Node?,
+          keyword_arg, location : Crystal::Location?)
         @info = {
           type:          self.class.name.split("::").last,
           name:          name,
@@ -147,7 +149,7 @@ module Rb
     class LiteralNode < Node
       @info : NamedTuple(type: String, value: String | Int32 | Bool | Nil, rb_type: String)
 
-      def initialize(value, rb_type : RbLiteral)
+      def initialize(value, rb_type : RbLiteral, location : Crystal::Location?)
         val = case rb_type
               when Rb::AST::RbLiteral::TrueClass
                 true
@@ -173,7 +175,7 @@ module Rb
     class ArrayLiteral < Node
       @info : NamedTuple(type: String, elements: Array(Node), frozen: Bool)
 
-      def initialize(elems, frozen = false)
+      def initialize(elems, location : Crystal::Location?, frozen = false)
         @info = {
           type:     self.class.name.split("::").last,
           elements: elems,
@@ -187,7 +189,7 @@ module Rb
     class HashLiteral < Node
       @info : NamedTuple(type: String, elements: Array(Tuple(Node, Node)) | Array(Tuple(String, Node)), frozen: Bool)
 
-      def initialize(elems, frozen = false)
+      def initialize(elems, location : Crystal::Location?, frozen = false)
         @info = {
           type:     self.class.name.split("::").last,
           elements: elems,
@@ -201,7 +203,7 @@ module Rb
     class RangeLiteral < Node
       @info : NamedTuple(type: String, from: Node, to: Node, exclusive: Bool)
 
-      def initialize(from, to, exclusive)
+      def initialize(from, to, exclusive, location : Crystal::Location?)
         @info = {
           type:      self.class.name.split("::").last,
           from:      from,
@@ -216,7 +218,7 @@ module Rb
     class RegexLiteral < Node
       @info : NamedTuple(type: String, value: Node)
 
-      def initialize(value)
+      def initialize(value, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           value: value,
@@ -237,7 +239,7 @@ module Rb
     end
 
     class EmptyNode < Nop
-      def initialize(class_name : String)
+      def initialize(class_name : String, location : Crystal::Location?)
         STDERR.puts "Encountered a ruby EmptyNode class name: #{class_name}"
         @info = {
           type: self.class.name.split("::").last,
@@ -248,7 +250,7 @@ module Rb
     class Var < Node
       @info : NamedTuple(type: String, name: String)
 
-      def initialize(@name : String)
+      def initialize(@name : String, location : Crystal::Location?)
         @info = {
           type: self.class.name.split("::").last,
           name: @name,
@@ -267,7 +269,7 @@ module Rb
     abstract class Conditional < Node
       @info : NamedTuple(type: String, condition: Node, then: Node, else: Node)
 
-      def initialize(@condition : Node, @thn : Node, @els : Node)
+      def initialize(@condition : Node, @thn : Node, @els : Node, location : Crystal::Location?)
         @info = {
           type:      self.class.name.split("::").last,
           condition: @condition,
@@ -288,7 +290,7 @@ module Rb
     class Case < Node
       @info : NamedTuple(type: String, condition: Node?, whens: Array(When), else: Node?, exhaustive: Bool)
 
-      def initialize(cond : Node?, whens : Array(When), els : Node?, exhaustive : Bool)
+      def initialize(cond : Node?, whens : Array(When), els : Node?, exhaustive : Bool, location : Crystal::Location?)
         @info = {
           type:       self.class.name.split("::").last,
           condition:  cond,
@@ -304,7 +306,7 @@ module Rb
     class When < Node
       @info : NamedTuple(type: String, conditions: Array(Node), body: Node, exhaustive: Bool)
 
-      def initialize(conds : Array(Node), body : Node, exhaustive : Bool)
+      def initialize(conds : Array(Node), body : Node, exhaustive : Bool, location : Crystal::Location?)
         @info = {
           type:       self.class.name.split("::").last,
           conditions: conds,
@@ -319,7 +321,7 @@ module Rb
     class Enum < Node
       @info : NamedTuple(type: String, name: Crystal::Path, members: Array(Node))
 
-      def initialize(@name : Crystal::Path, @members : Array(Node))
+      def initialize(@name : Crystal::Path, @members : Array(Node), location : Crystal::Location?)
         @info = {
           type:    self.class.name.split("::").last,
           name:    @name,
@@ -333,8 +335,7 @@ module Rb
     class Call < Node
       @info : NamedTuple(type: String, name: String, args: Array(Node), object: Node?, block: Block?, block_arg: Node?, named_args: Array(Arg)?, has_parentheses: Bool)
 
-      def initialize(object : Node?, name : String, args : Array(Node), named_args, block,
-                     block_arg, has_parentheses)
+      def initialize(object : Node?, name : String, args : Array(Node), named_args, block, block_arg, has_parentheses, location : Crystal::Location?)
         @info = {
           type:            self.class.name.split("::").last,
           name:            name,
@@ -359,7 +360,7 @@ module Rb
     class StringInterpolation < Node
       @info : NamedTuple(type: String, contents: Array(Node))
 
-      def initialize(contents)
+      def initialize(contents, location : Crystal::Location?)
         @info = {
           type:     self.class.name.split("::").last,
           contents: contents,
@@ -372,7 +373,7 @@ module Rb
     class UnaryExpr < Node
       @info : NamedTuple(type: String, op: String, value: Node, with_parens: Bool)
 
-      def initialize(val, op, parens)
+      def initialize(val, op, parens, location : Crystal::Location?)
         @info = {
           type:        self.class.name.split("::").last,
           value:       val,
@@ -387,7 +388,7 @@ module Rb
     class BinaryOp < Node
       @info : NamedTuple(type: String, op: String, left: Node, right: Node)
 
-      def initialize(op, left, right)
+      def initialize(op, left, right, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           left:  left,
@@ -402,7 +403,7 @@ module Rb
     class Assign < Node
       @info : NamedTuple(type: String, op: String?, target: Node, value: Node)
 
-      def initialize(target, value, op = nil)
+      def initialize(target, value, op, location : Crystal::Location?)
         @info = {
           type:   self.class.name.split("::").last,
           target: target,
@@ -417,7 +418,7 @@ module Rb
     class MultiAssign < Node
       @info : NamedTuple(type: String, targets: Array(Node), values: Array(Node))
 
-      def initialize(targets, values)
+      def initialize(targets, values, location : Crystal::Location?)
         @info = {
           type:    self.class.name.split("::").last,
           targets: targets,
@@ -431,7 +432,7 @@ module Rb
     class TypeDeclaration < Node
       @info : NamedTuple(type: String, var: Node, declared_type: Node, value: Node?, var_type: String)
 
-      def initialize(@var : Node, @declared_type : Node, @value : Node?)
+      def initialize(@var : Node, @declared_type : Node, @value : Node?, location : Crystal::Location?)
         @info = {
           type:          self.class.name.split("::").last,
           var:           @var,
@@ -447,7 +448,7 @@ module Rb
     class MacroFor < Node
       @info : NamedTuple(type: String, vars: Array(Var), expr: Node, body: Node)
 
-      def initialize(vars, expr, body)
+      def initialize(vars, expr, body, location : Crystal::Location?)
         @info = {
           type: self.class.name.split("::").last,
           vars: vars,
@@ -468,7 +469,7 @@ module Rb
     class MacroExpression < Node
       @info : NamedTuple(type: String, expr: Node, output: Bool)
 
-      def initialize(expr, output)
+      def initialize(expr, output, location : Crystal::Location?)
         @info = {
           type:   self.class.name.split("::").last,
           expr:   expr,
@@ -482,7 +483,7 @@ module Rb
     class ControlExpression < Node
       @info : NamedTuple(type: String, value: Node?)
 
-      def initialize(value)
+      def initialize(value, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           value: value,
@@ -505,7 +506,7 @@ module Rb
       @info : NamedTuple(type: String, body: Node, rescues: Array(Rescue)?, else: Node?,
         ensure: Node?)
 
-      def initialize(body, rescues, else_node, ensure_node)
+      def initialize(body, rescues, else_node, ensure_node, location : Crystal::Location?)
         @info = {
           type:    self.class.name.split("::").last,
           body:    body,
@@ -521,7 +522,7 @@ module Rb
     class Rescue < Node
       @info : NamedTuple(type: String, body: Node, types: Array(Node)?, name: String?)
 
-      def initialize(body, types, name)
+      def initialize(body, types, name, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           body:  body,
@@ -536,7 +537,7 @@ module Rb
     class Union < Node
       @info : NamedTuple(type: String, types: Array(Node))
 
-      def initialize(types)
+      def initialize(types, location : Crystal::Location?)
         @info = {
           type:  self.class.name.split("::").last,
           types: types,
@@ -549,7 +550,7 @@ module Rb
     class Generic < Node
       @info : NamedTuple(type: String, name: Node, args: Array(Node))
 
-      def initialize(name, args)
+      def initialize(name, args, location : Crystal::Location?)
         @info = {
           type: self.class.name.split("::").last,
           name: name,
@@ -563,7 +564,7 @@ module Rb
     class Proc < Node
       @info : NamedTuple(type: String, function: DefNode)
 
-      def initialize(function)
+      def initialize(function, location : Crystal::Location?)
         @info = {
           type:     self.class.name.split("::").last,
           function: function,
@@ -576,7 +577,7 @@ module Rb
     class NodeWithNameNode < Node
       @info : NamedTuple(type: String, name: Node)
 
-      def initialize(name)
+      def initialize(name, location : Crystal::Location?)
         @info = {
           type: self.class.name.split("::").last,
           name: name,
@@ -595,7 +596,7 @@ module Rb
     class VisibilityModifier < Node
       @info : NamedTuple(type: String, visibility: String, exp: Node)
 
-      def initialize(visibility : Crystal::Visibility, exp : Node)
+      def initialize(visibility : Crystal::Visibility, exp : Node, location : Crystal::Location?)
         vis = case visibility
               when Crystal::Visibility::Public
                 "public"

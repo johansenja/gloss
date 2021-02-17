@@ -5,7 +5,7 @@ require "./rb_ast"
 module Crystal
   abstract class ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
@@ -17,13 +17,13 @@ module Crystal
 
   class Expressions < ASTNode
     def to_rb
-      Rb::AST::CollectionNode.new(@expressions.map(&.to_rb))
+      Rb::AST::CollectionNode.new(@expressions.map(&.to_rb), @location)
     end
   end
 
   class NilLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new("nil", Rb::AST::RbLiteral::NilClass)
+      Rb::AST::LiteralNode.new("nil", Rb::AST::RbLiteral::NilClass, @location)
     end
   end
 
@@ -31,74 +31,73 @@ module Crystal
     def to_rb
       Rb::AST::LiteralNode.new(
         @value.inspect,
-        @value ? Rb::AST::RbLiteral::TrueClass : Rb::AST::RbLiteral::FalseClass
-      )
+        @value ? Rb::AST::RbLiteral::TrueClass : Rb::AST::RbLiteral::FalseClass, @location)
     end
   end
 
   class NumberLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(@value, Rb::AST::RbLiteral::Integer)
+      Rb::AST::LiteralNode.new(@value, Rb::AST::RbLiteral::Integer, @location)
     end
   end
 
   class CharLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(@value.inspect, Rb::AST::RbLiteral::String)
+      Rb::AST::LiteralNode.new(@value.inspect, Rb::AST::RbLiteral::String, @location)
     end
   end
 
   class StringLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(@value.inspect, Rb::AST::RbLiteral::String)
+      Rb::AST::LiteralNode.new(@value.inspect, Rb::AST::RbLiteral::String, @location)
     end
   end
 
   class StringInterpolation < ASTNode
     def to_rb
-      Rb::AST::StringInterpolation.new(@expressions.map &.to_rb)
+      Rb::AST::StringInterpolation.new(@expressions.map &.to_rb, @location)
     end
   end
 
   class SymbolLiteral < ASTNode
     def to_rb
-      Rb::AST::LiteralNode.new(%{:"#{@value.to_s}"}, Rb::AST::RbLiteral::Symbol)
+      Rb::AST::LiteralNode.new(%{:"#{@value.to_s}"}, Rb::AST::RbLiteral::Symbol, @location)
     end
   end
 
   class ArrayLiteral < ASTNode
     def to_rb
-      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb))
+      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb), @location)
     end
   end
 
   class HashLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key.to_rb, e.value.to_rb} })
+      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key.to_rb, e.value.to_rb} }, @location)
     end
   end
 
   class NamedTupleLiteral < ASTNode
     def to_rb
-      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key, e.value.to_rb} }, frozen: true)
+      Rb::AST::HashLiteral.new(@entries.map { |e| {e.key, e.value.to_rb} }, @location, frozen: true)
     end
   end
 
   class RangeLiteral < ASTNode
     def to_rb
-      Rb::AST::RangeLiteral.new(@from.to_rb, @to.to_rb, @exclusive)
+      Rb::AST::RangeLiteral.new(@from.to_rb, @to.to_rb, @exclusive, @location)
     end
   end
 
   class RegexLiteral < ASTNode
     def to_rb
-      Rb::AST::RegexLiteral.new(@value.to_rb)
+      Rb::AST::RegexLiteral.new(@value.to_rb, @location)
     end
   end
 
   class TupleLiteral < ASTNode
     def to_rb
-      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb), frozen: true)
+      Rb::AST::ArrayLiteral.new(@elements.map(&.to_rb), @location, frozen: true)
     end
   end
 
@@ -115,26 +114,25 @@ module Crystal
         @body.to_rb,
         return_type.try(&.to_rb),
         @yields,
-        @block_arg.try &.to_rb
-      )
+        @block_arg.try &.to_rb, @location)
     end
   end
 
   class ClassDef < ASTNode
     def to_rb
-      Rb::AST::ClassNode.new(@name.to_rb, @body.to_rb, @superclass.try(&.to_rb), @type_vars, @abstract)
+      Rb::AST::ClassNode.new(@name.to_rb, @body.to_rb, @superclass.try(&.to_rb), @type_vars, @abstract, @location)
     end
   end
 
   class ModuleDef < ASTNode
     def to_rb
-      Rb::AST::ModuleNode.new(@name.to_rb, @body.to_rb, @type_vars)
+      Rb::AST::ModuleNode.new(@name.to_rb, @body.to_rb, @type_vars, @location)
     end
   end
 
   class Var < ASTNode
     def to_rb
-      Rb::AST::Var.new(@name)
+      Rb::AST::Var.new(@name, @location)
     end
   end
 
@@ -142,7 +140,7 @@ module Crystal
     def to_rb
       positional_args = args.dup
       splat = @splat_index ? positional_args.delete_at(@splat_index.as(Int32)) : nil
-      Rb::AST::Block.new(positional_args.map(&.to_rb), splat.try &.to_rb, @body.to_rb)
+      Rb::AST::Block.new(positional_args.map(&.to_rb), splat.try &.to_rb, @body.to_rb, @location)
     end
   end
 
@@ -155,8 +153,7 @@ module Crystal
         @named_args.try(&.map(&.to_rb.as(Rb::AST::Arg))),
         @block.try(&.to_rb),
         @block_arg.try(&.to_rb),
-        @has_parentheses
-      )
+        @has_parentheses, @location)
     end
   end
 
@@ -165,121 +162,121 @@ module Crystal
 
     def to_rb
       Rb::AST::Arg.new(@name, @external_name, @restriction.try(&.to_rb),
-        @default_value.try(&.to_rb), @keyword_arg)
+        @default_value.try(&.to_rb), @keyword_arg, @location)
     end
   end
 
   class NamedArgument < ASTNode
     def to_rb
-      Rb::AST::Arg.new(@name, @name, nil, @value.to_rb, true)
+      Rb::AST::Arg.new(@name, @name, nil, @value.to_rb, true, @location)
     end
   end
 
   class If < ASTNode
     def to_rb
-      Rb::AST::If.new(@cond.to_rb, @then.to_rb, @else.to_rb)
+      Rb::AST::If.new(@cond.to_rb, @then.to_rb, @else.to_rb, @location)
     end
   end
 
   class Unless < ASTNode
     def to_rb
-      Rb::AST::Unless.new(@cond.to_rb, @then.to_rb, @else.to_rb)
+      Rb::AST::Unless.new(@cond.to_rb, @then.to_rb, @else.to_rb, @location)
     end
   end
 
   class Assign < ASTNode
     def to_rb
-      Rb::AST::Assign.new(@target.to_rb, @value.to_rb)
+      Rb::AST::Assign.new(@target.to_rb, @value.to_rb, nil, @location)
     end
   end
 
   class OpAssign < ASTNode
     def to_rb
-      Rb::AST::Assign.new(@target.to_rb, @value.to_rb, @op)
+      Rb::AST::Assign.new(@target.to_rb, @value.to_rb, @op, @location)
     end
   end
 
   class MultiAssign < ASTNode
     def to_rb
-      Rb::AST::MultiAssign.new(@targets.map(&.to_rb), @values.map(&.to_rb))
+      Rb::AST::MultiAssign.new(@targets.map(&.to_rb), @values.map(&.to_rb), @location)
     end
   end
 
   class InstanceVar < ASTNode
     def to_rb
-      Rb::AST::InstanceVar.new(@name)
+      Rb::AST::InstanceVar.new(@name, @location)
     end
   end
 
   class ReadInstanceVar < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
   class ClassVar < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
   class Global < ASTNode
     def to_rb
-      Rb::AST::GlobalVar.new(@name)
+      Rb::AST::GlobalVar.new(@name, @location)
     end
   end
 
   class Annotation < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
   class MacroIf < ASTNode
     def to_rb
-      Rb::AST::MacroIf.new(@cond.to_rb, @then.to_rb, @else.to_rb)
+      Rb::AST::MacroIf.new(@cond.to_rb, @then.to_rb, @else.to_rb, @location)
     end
   end
 
   class MacroFor < ASTNode
     def to_rb
-      Rb::AST::MacroFor.new(@vars.map(&.to_rb), @exp.to_rb, @body.to_rb)
+      Rb::AST::MacroFor.new(@vars.map(&.to_rb), @exp.to_rb, @body.to_rb, @location)
     end
   end
 
   class MacroVar < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
   class MacroExpression < ASTNode
     def to_rb
-      Rb::AST::MacroExpression.new(@exp.to_rb, @output)
+      Rb::AST::MacroExpression.new(@exp.to_rb, @output, @location)
     end
   end
 
   class MacroLiteral < ASTNode
     def to_rb
-      Rb::AST::MacroLiteral.new(@value)
+      Rb::AST::MacroLiteral.new(@value, @location)
     end
   end
 
   class Annotation < ASTNode
     def to_rb
-      Rb::AST::EmptyNode.new(self.class.name)
+      Rb::AST::EmptyNode.new(self.class.name, @location)
     end
   end
 
   class EnumDef < ASTNode
     def to_rb
-      Rb::AST::Enum.new(@name, @members.map(&.to_rb))
+      Rb::AST::Enum.new(@name, @members.map(&.to_rb), @location)
     end
   end
 
   class Path < ASTNode
     def to_rb
-      Rb::AST::Path.new(full_name)
+      Rb::AST::Path.new(full_name, @location)
     end
 
     def full_name
@@ -291,13 +288,13 @@ module Crystal
 
   class Require < ASTNode
     def to_rb
-      Rb::AST::Require.new(@string)
+      Rb::AST::Require.new(@string, @location)
     end
   end
 
   class TypeDeclaration < ASTNode
     def to_rb
-      Rb::AST::TypeDeclaration.new(@var.to_rb, @declared_type.to_rb, @value.try(&.to_rb))
+      Rb::AST::TypeDeclaration.new(@var.to_rb, @declared_type.to_rb, @value.try(&.to_rb), @location)
     end
   end
 
@@ -307,8 +304,7 @@ module Crystal
         @cond.try(&.to_rb),
         @whens.map(&.to_rb),
         @else.try(&.to_rb),
-        @exhaustive
-      )
+        @exhaustive, @location)
     end
   end
 
@@ -322,16 +318,14 @@ module Crystal
               Def.new(
                 "->",
                 [Arg.new(arg_name)],
-                c.tap { |call| call.obj = Var.new(arg_name) }
-              )
+                c.tap { |call| call.obj = Var.new(arg_name) })
             ).to_rb
           else
             c.to_rb
           end
         end,
         @body.to_rb,
-        @exhaustive
-      )
+        @exhaustive, @location)
     end
   end
 
@@ -351,8 +345,7 @@ module Crystal
         Rb::AST::UnaryExpr.new(
           @exp.to_rb,
           op,
-          requires_parentheses
-        )
+          requires_parentheses ,@location)
       end
     end
   {% end %}
@@ -367,8 +360,7 @@ module Crystal
             "||",
           {% end %}
           @left.to_rb,
-          @right.to_rb
-        )
+          @right.to_rb ,@location)
       end
     end
   {% end %}
@@ -376,7 +368,7 @@ module Crystal
   {% for class_name in %w[Return Break Next] %}
     class {{class_name.id}} < ControlExpression
       def to_rb
-        Rb::AST::{{class_name.id}}.new(@exp.try(&.to_rb))
+        Rb::AST::{{class_name.id}}.new(@exp.try(&.to_rb),@location)
       end
     end
   {% end %}
@@ -384,43 +376,43 @@ module Crystal
   class ExceptionHandler < ASTNode
     def to_rb
       Rb::AST::ExceptionHandler.new(@body.to_rb, @rescues.try(&.map(&.to_rb)), @else.try(&.to_rb),
-        @ensure.try(&.to_rb))
+        @ensure.try(&.to_rb), @location)
     end
   end
 
   class Rescue < ASTNode
     def to_rb
-      Rb::AST::Rescue.new(@body.to_rb, @types.try(&.map(&.to_rb)), @name)
+      Rb::AST::Rescue.new(@body.to_rb, @types.try(&.map(&.to_rb)), @name, @location)
     end
   end
 
   class Union < ASTNode
     def to_rb
-      Rb::AST::Union.new(@types.map(&.to_rb))
+      Rb::AST::Union.new(@types.map(&.to_rb), @location)
     end
   end
 
   class Generic < ASTNode
     def to_rb
-      Rb::AST::Generic.new(@name.to_rb, @type_vars.map(&.to_rb))
+      Rb::AST::Generic.new(@name.to_rb, @type_vars.map(&.to_rb), @location)
     end
   end
 
   class ProcLiteral < ASTNode
     def to_rb
-      Rb::AST::Proc.new(@def.to_rb)
+      Rb::AST::Proc.new(@def.to_rb, @location)
     end
   end
 
   class Include < ASTNode
     def to_rb
-      Rb::AST::Include.new(@name.to_rb)
+      Rb::AST::Include.new(@name.to_rb, @location)
     end
   end
 
   class Extend < ASTNode
     def to_rb
-      Rb::AST::Extend.new(@name.to_rb)
+      Rb::AST::Extend.new(@name.to_rb, @location)
     end
   end
 
@@ -433,14 +425,13 @@ module Crystal
         nil,
         nil,
         nil,
-        false
-      )
+        false, @location)
     end
   end
 
   class VisibilityModifier < ASTNode
     def to_rb
-      Rb::AST::VisibilityModifier.new(@modifier, @exp.to_rb)
+      Rb::AST::VisibilityModifier.new(@modifier, @exp.to_rb, @location)
     end
   end
 
@@ -453,8 +444,7 @@ module Crystal
         nil,
         nil,
         nil,
-        !@exps.empty?
-      )
+        !@exps.empty?, @location)
     end
   end
 
@@ -465,7 +455,7 @@ module Crystal
                          Underscore MagicConstant Asm AsmOperand] %}
     class {{class_name.id}} < ASTNode
       def to_rb
-        Rb::AST::EmptyNode.new(self.class.name)
+        Rb::AST::EmptyNode.new(self.class.name,@location)
       end
     end
   {% end %}
@@ -473,7 +463,7 @@ module Crystal
   {% for class_name in %w[PointerOf SizeOf InstanceSizeOf Out MacroVerbatim] %}
     class {{class_name.id}} < UnaryExpression
       def to_rb
-        Rb::AST::EmptyNode.new(self.class.name)
+        Rb::AST::EmptyNode.new(self.class.name,@location)
       end
     end
   {% end %}
