@@ -42,8 +42,8 @@ module Gloss
               "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Diagnostic::Ruby::IncompatibleArguments
               <<-ERR
-              Invalid argmuents - method type: #{e.method_type}
-              method name: #{e.method_type.method_decls.first.method_name}
+              Invalid argmuents - method type: #{e.method_types.first}
+              method name: #{e.method_name}
               ERR
             when Steep::Diagnostic::Ruby::ReturnTypeMismatch
               "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"

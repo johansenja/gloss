@@ -27,8 +27,8 @@ module Gloss
       @type_checker = type_checker
     end
 
-    def run(&block)
-      rb_output = visit_node(@tree, &block)
+    def run
+      rb_output = visit_node(@tree)
       with_file_header(rb_output)
     end
 
@@ -41,18 +41,29 @@ module Gloss
         class_name = visit_node(node[:name])
         current_namespace = @current_scope ? @current_scope.name.to_namespace : RBS::Namespace.root
         superclass_type = nil
-        superclass_output = nil
+        superclass_output = ""
         if node[:superclass]
           @eval_vars = true
           superclass_output = visit_node(node[:superclass])
           @eval_vars = false
-          superclass_type = RBS::Parser.parse_type superclass_output
           if node.dig(:superclass, :type) == "Generic"
-            superclass_output = superclass_output[/^[^\[]+/]
+            superclass_output = superclass_output[/^[^\[]+/] || superclass_output
           end
+
+          class_name_index = superclass_output.index(/[^(?:::)]+\z/) || 0
+          namespace = superclass_output[0, class_name_index]
+          superclass_name = superclass_output[/[^(?:::)]+\z/] || superclass_output
+          superclass_type = RBS::AST::Declarations::Class::Super.new(
+            name: RBS::TypeName.new(
+              namespace: method(:Namespace).call(namespace),
+              name: superclass_name.to_sym,
+            ),
+            args: Array.new,
+            location: build_location(node),
+          )
         end
 
-        src.write_ln "class #{class_name}#{" < #{superclass_output}" if superclass_output}"
+        src.write_ln "class #{class_name}#{" < #{superclass_output}" unless superclass_output.blank?}"
 
         class_type = RBS::AST::Declarations::Class.new(
           name: RBS::TypeName.new(
@@ -63,7 +74,7 @@ module Gloss
           super_class: superclass_type,
           members: Array.new, # TODO
           annotations: Array.new, # TODO
-          location: node[:location],
+          location: build_location(node),
           comment: node[:comment]
         )
         old_parent_scope = @current_scope
@@ -95,7 +106,7 @@ module Gloss
           self_types: Array.new, # TODO
           members: Array.new, # TODO
           annotations: Array.new, # TODO
-          location: node[:location],
+          location: build_location(node),
           comment: node[:comment]
         )
         old_parent_scope = @current_scope
@@ -123,11 +134,11 @@ module Gloss
                             namespace: RBS::Namespace.root
                           ),
                           args: EMPTY_ARRAY, # TODO
-                          location: node[:location]
+                          location: build_location(node)
                         )
                       else
                         RBS::Types::Bases::Any.new(
-                          location: node[:location]
+                          location: build_location(node)
                         )
                       end
 
@@ -154,19 +165,19 @@ module Gloss
                   required_keywords: Hash.new,
                   optional_keywords: Hash.new,
                   rest_keywords: nil,
-                  return_type: RBS::Types::Bases::Any.new(location: node[:location])
+                  return_type: RBS::Types::Bases::Any.new(location: build_location(node))
                 ),
                 required: !!(node[:block_arg] || node[:yield_arg_count])
               ) : nil,
-            location: node[:location]
+            location: build_location(node)
           )
         ]
         method_definition = RBS::AST::Members::MethodDefinition.new(
           name: node[:name].to_sym,
-          kind: receiver ? :class : :instance,
+          kind: receiver ? :singleton : :instance,
           types: method_types,
           annotations: EMPTY_ARRAY, # TODO
-          location: node[:location],
+          location: build_location(node),
           comment: node[:comment],
           overload: false
         )
@@ -426,7 +437,7 @@ module Gloss
             name: method(:TypeName).call(name),
             args: Array.new,
             annotations: Array.new,
-            location: node[:location],
+            location: build_location(node),
             comment: node[:comment]
           )
         if @current_scope
@@ -442,7 +453,7 @@ module Gloss
             name: method(:TypeName).call(name),
             args: Array.new,
             annotations: Array.new,
-            location: node[:location],
+            location: build_location(node),
             comment: node[:comment]
           )
         if @current_scope
@@ -514,37 +525,50 @@ module Gloss
         rest_kw ? "**#{visit_node(rest_kw)}" : ""
       ].reject(&:empty?).flatten.join(", ")
       representation = "(#{contents})"
-      rp.map! do |a|
+      rp_args = rp.map do |a|
         RBS::Types::Function::Param.new(
           name: visit_node(a).to_sym,
           type: RBS::Types::Bases::Any.new(
-            location: a[:location]
+            location: build_location(a)
           )
         )
       end
-      op.map! do |a|
+      op_args = op.map do |a|
         RBS::Types::Function::Param.new(
           name: visit_node(a).to_sym,
-          type: RBS::Types::Bases::Any.new(location: a[:location])
+          type: RBS::Types::Bases::Any.new(location: build_location(a))
         )
       end
-      rest_p = (rpa = node[:rest_p_args]) ? RBS::Types::Function::Param.new(name: visit_node(rpa).to_sym, type: RBS::Types::Bases::Any.new(location: node[:location])) : nil
+      rpa = rest_p ? RBS::Types::Function::Param.new(
+              name: rest_p.to_sym,
+              type: RBS::Types::Bases::Any.new(location: build_location(node))
+            ) : nil
       {
         representation: representation,
         types: {
-          required_positionals: rp,
-          optional_positionals: op,
-          rest_positionals: rest_p,
+          required_positionals: rp_args,
+          optional_positionals: op_args,
+          rest_positionals: rpa,
           trailing_positionals: EMPTY_ARRAY, # TODO
           required_keywords: node[:req_kw_args] || EMPTY_HASH,
           optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
           rest_keywords: node[:rest_kw_args] ?
             RBS::Types::Function::Param.new(
               name: visit_node(node[:rest_kw_args]).to_sym,
-              type: RBS::Types::Bases::Any.new(location: node[:location])
+              type: RBS::Types::Bases::Any.new(location: build_location(node))
             ) : nil
         }
       }
+    end
+
+    def build_location(node)
+      return nil unless node[:location]
+
+#      RBS::Location.new(
+#        buffer: RBS::Buffer.new(@file_path, @file_content),
+#        start_pos: node[:location][:start],
+#        end_pos: node[:location][:end]
+#      )
     end
   end
 end

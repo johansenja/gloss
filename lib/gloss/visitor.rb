@@ -25,7 +25,7 @@ module Gloss
       @type_checker = type_checker
       @on_new_file_referenced = on_new_file_referenced
     end
-    def run()
+    def run
       rb_output = visit_node(@tree)
       with_file_header(rb_output)
     end
@@ -41,21 +41,31 @@ case node.[](:"type")
             RBS::Namespace.root
           end)
           superclass_type = nil
-          superclass_output = nil
+          superclass_output = ""
           (if node.[](:"superclass")
             @eval_vars = true
-            superclass_output = visit_node(node.[](:"superclass"))
+            superclass_output = visit_node(node[:superclass])
             @eval_vars = false
-            superclass_type = RBS::Parser.parse_type(superclass_output)
-            (if node.dig(:"superclass", :"type")
-.==("Generic")
-              superclass_output = superclass_output.[](/^[^\[]+/)
-            end)
+            if node.dig(:superclass, :type) == "Generic"
+              superclass_output = superclass_output[/^[^\[]+/] || superclass_output
+            end
+
+            class_name_index = superclass_output.index(/[^(?:::)]+\z/) || 0
+            namespace = superclass_output[0, class_name_index]
+            superclass_name = superclass_output[/[^(?:::)]+\z/] || superclass_output
+            superclass_type = RBS::AST::Declarations::Class::Super.new(
+              name: RBS::TypeName.new(
+                namespace: method(:Namespace).call(namespace),
+                name: superclass_name.to_sym,
+              ),
+              args: Array.new,
+              location: build_location(node),
+            )
           end)
-          src.write_ln("class #{class_name}#{(if superclass_output
+          src.write_ln("class #{class_name}#{(unless superclass_output.blank?
             " < #{superclass_output}"
           end)}")
-          class_type = RBS::AST::Declarations::Class.new(name:           RBS::TypeName.new(namespace: current_namespace, name:           class_name.to_sym), type_params:           RBS::AST::Declarations::ModuleTypeParams.new, super_class: superclass_type, members:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+          class_type = RBS::AST::Declarations::Class.new(name:           RBS::TypeName.new(namespace: current_namespace, name:           class_name.to_sym), type_params:           RBS::AST::Declarations::ModuleTypeParams.new, super_class: superclass_type, members:           Array.new, annotations:           Array.new, location:           build_location(node), comment:           node.[](:"comment"))
           old_parent_scope = @current_scope
           @current_scope = class_type
           indented(src) { ||
@@ -85,7 +95,7 @@ case node.[](:"type")
           else
             RBS::Namespace.root
           end)
-          module_type = RBS::AST::Declarations::Module.new(name:           RBS::TypeName.new(namespace: current_namespace, name:           module_name.to_sym), type_params:           RBS::AST::Declarations::ModuleTypeParams.new, self_types:           Array.new, members:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+          module_type = RBS::AST::Declarations::Module.new(name:           RBS::TypeName.new(namespace: current_namespace, name:           module_name.to_sym), type_params:           RBS::AST::Declarations::ModuleTypeParams.new, self_types:           Array.new, members:           Array.new, annotations:           Array.new, location:           build_location(node), comment:           node.[](:"comment"))
           old_parent_scope = @current_scope
           @current_scope = module_type
           indented(src) { ||
@@ -119,21 +129,21 @@ case node.[](:"type")
           return_type = (if node.[](:"return_type")
             RBS::Types::ClassInstance.new(name:             RBS::TypeName.new(name:             eval(visit_node(node.[](:"return_type")))
 .to_s
-.to_sym, namespace:             RBS::Namespace.root), args: EMPTY_ARRAY, location:             node.[](:"location"))
+.to_sym, namespace:             RBS::Namespace.root), args: EMPTY_ARRAY, location:             build_location(node))
           else
-            RBS::Types::Bases::Any.new(location:             node.[](:"location"))
+            RBS::Types::Bases::Any.new(location:             build_location(node))
           end)
           method_types = [RBS::MethodType.new(type_params: EMPTY_ARRAY, type:           RBS::Types::Function.new(required_positionals:           args.dig(:"types", :"required_positionals"), optional_positionals:           args.dig(:"types", :"optional_positionals"), rest_positionals:           args.dig(:"types", :"rest_positionals"), trailing_positionals:           args.dig(:"types", :"trailing_positionals"), required_keywords:           args.dig(:"types", :"required_keywords"), optional_keywords:           args.dig(:"types", :"optional_keywords"), rest_keywords:           args.dig(:"types", :"rest_keywords"), return_type: return_type), block:           (if node.[](:"yield_arg_count")
-            RBS::Types::Block.new(type:             RBS::Types::Function.new(required_positionals:             Array.new, optional_positionals:             Array.new, rest_positionals: nil, trailing_positionals:             Array.new, required_keywords:             Hash.new, optional_keywords:             Hash.new, rest_keywords: nil, return_type:             RBS::Types::Bases::Any.new(location:             node.[](:"location"))), required: !!node.[](:"block_arg") || node.[](:"yield_arg_count"))
+            RBS::Types::Block.new(type:             RBS::Types::Function.new(required_positionals:             Array.new, optional_positionals:             Array.new, rest_positionals: nil, trailing_positionals:             Array.new, required_keywords:             Hash.new, optional_keywords:             Hash.new, rest_keywords: nil, return_type:             RBS::Types::Bases::Any.new(location:             build_location(node))), required: !!node.[](:"block_arg") || node.[](:"yield_arg_count"))
           else
             nil
-          end), location:           node.[](:"location"))]
+          end), location:         build_location(node))]
           method_definition = RBS::AST::Members::MethodDefinition.new(name:           node.[](:"name")
 .to_sym, kind:           (if receiver
             :"class"
           else
             :"instance"
-          end), types: method_types, annotations: EMPTY_ARRAY, location:           node.[](:"location"), comment:           node.[](:"comment"), overload: false)
+          end), types: method_types, annotations: EMPTY_ARRAY, location:           build_location(node), comment:           node.[](:"comment"), overload: false)
           (if @current_scope
             @current_scope.members
 .<<(method_definition)
@@ -489,7 +499,7 @@ EMPTY_ARRAY          }
           name = visit_node(node.[](:"name"))
           src.write_ln("include #{name}")
           type = RBS::AST::Members::Include.new(name:           method(:"TypeName")
-.call(name), args:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+.call(name), args:           Array.new, annotations:           Array.new, location:           build_location(node), comment:           node.[](:"comment"))
           (if @current_scope
             @current_scope.members
 .<<(type)
@@ -507,7 +517,7 @@ EMPTY_ARRAY          }
           name = visit_node(node.[](:"name"))
           src.write_ln("extend #{name}")
           type = RBS::AST::Members::Extend.new(name:           method(:"TypeName")
-.call(name), args:           Array.new, annotations:           Array.new, location:           node.[](:"location"), comment:           node.[](:"comment"))
+.call(name), args:           Array.new, annotations:           Array.new, location:           build_location(node), comment:           node.[](:"comment"))
           (if @current_scope
             @current_scope.members
 .<<(type)
@@ -613,34 +623,41 @@ a && a.empty?      }
 .flatten
 .join(", ")
       representation = "(#{contents})"
-      rp.map!() { |a|
+      rp_args = rp.map() { |a|
         RBS::Types::Function::Param.new(name:         visit_node(a)
 .to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
       }
-      op.map!() { |a|
+      op_args = op.map() { |a|
         RBS::Types::Function::Param.new(name:         visit_node(a)
 .to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
       }
-      rest_p = (if rpa = node.[](:"rest_p_args")
-        RBS::Types::Function::Param.new(name:         visit_node(rpa)
-.to_sym, type:         RBS::Types::Bases::Any.new(location:         node.[](:"location")))
-      else
-        nil
-      end)
+      rpa = rest_p ? RBS::Types::Function::Param.new(
+              name: rest_p.to_sym,
+              type: RBS::Types::Bases::Any.new(location: build_location(node))
+            ) : nil
 {:representation => representation,
-:types => {:required_positionals => rp,
-:optional_positionals => op,
-:rest_positionals => rest_p,
+:types => {:required_positionals => rp_args,
+:optional_positionals => op_args,
+          rest_positionals: rpa,
 :trailing_positionals => EMPTY_ARRAY,
 :required_keywords => node.[](:"req_kw_args") || EMPTY_HASH,
 :optional_keywords => node.[](:"opt_kw_args") || EMPTY_HASH,
 :rest_keywords =>       (if node.[](:"rest_kw_args")
         RBS::Types::Function::Param.new(name:         visit_node(node.[](:"rest_kw_args"))
-.to_sym, type:         RBS::Types::Bases::Any.new(location:         node.[](:"location")))
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         build_location(node)))
       else
         nil
       end)
 }.freeze}.freeze
+    end
+    def build_location(node)
+      return nil unless node[:location]
+
+      RBS::Location.new(
+        buffer: RBS::Buffer.new(@file_path, @file_content),
+        start_pos: node[:location][:start],
+        end_pos: node[:location][:end]
+      )
     end
   end
 end

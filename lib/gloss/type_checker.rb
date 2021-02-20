@@ -41,10 +41,7 @@ case e
             when Steep::Diagnostic::Ruby::MethodBodyTypeMismatch
               "Invalid method body type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Diagnostic::Ruby::IncompatibleArguments
-              "Invalid argmuents - method type: #{e.method_type}\nmethod name: #{e.method_type
-.method_decls
-.first
-.method_name}"
+              "Invalid argmuents - method type: #{e.method_types.first}\nmethod name: #{e.method_name}"
             when Steep::Diagnostic::Ruby::ReturnTypeMismatch
               "Invalid return type - expected: #{e.expected}, actual: #{e.actual}"
             when Steep::Diagnostic::Ruby::IncompatibleAssignment
