@@ -1,3 +1,8 @@
+# frozen_string_literal: true
+
+require "rubygems/gem_runner"
+
+
 module Gloss
   module Utils
     module_function
@@ -17,11 +22,15 @@ module Gloss
     end
 
     def gem_path_for(gem_name)
-      `gem which #{gem_name}`.chomp
-    rescue
+      Gem.ui.instance_variable_set :@outs, StringIO.new
+      Gem::GemRunner.new.run(["which", gem_name])
+      Gem.ui.outs.string
+    rescue SystemExit => e
       nil
     end
   end
+
+  OUTPUT_BY_PATH = {}
 
   class ProgLoader
     include Utils
@@ -54,7 +63,7 @@ module Gloss
             handle_require pa
           end
         end
-        Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
+        OUTPUT_BY_PATH[path_string] ||= Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
         @processed_files.add path_string
       end
 
