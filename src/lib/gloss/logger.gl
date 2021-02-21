@@ -1,6 +1,8 @@
 module Gloss
   def self.logger
-    @logger ||= begin
+    if @logger
+      @logger
+    else
       env_log_level = ENV.fetch("LOG_LEVEL") { "INFO" }
       real_log_level = {
         "UNKNOWN" => Logger::UNKNOWN,
@@ -13,7 +15,7 @@ module Gloss
         nil => nil,
         "" => nil
       }.fetch env_log_level
-      Logger.new(real_log_level ? STDOUT : IO::NULL)
+      @logger = Logger.new(real_log_level ? STDOUT : IO::NULL)
     end
   end
 end
