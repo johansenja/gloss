@@ -15,7 +15,7 @@ module Gloss
       @current_scope = nil
       @tree = tree_hash
       @type_checker = type_checker
-      @past_module_function = false
+      @after_module_function = false
     end
 
     def run
@@ -85,7 +85,8 @@ module Gloss
           @type_checker.top_level_decls.add(class_type)
         end
       when "ModuleNode"
-        already_module_function = @past_module_function.dup
+        existing_module_function_state = @after_module_function.dup
+        @after_module_function = false
         module_name = visit_node node[:name]
         src.write_ln "module #{module_name}"
 
@@ -116,7 +117,7 @@ module Gloss
           @type_checker.top_level_decls.add(module_type)
         end
         src.write_ln "end"
-        @past_module_function = false if @past_module_function && !already_module_function
+        @after_module_function = existing_module_function_state
       when "DefNode"
         args = render_args(node)
         receiver = node[:receiver] ? visit_node(node[:receiver]) : nil
@@ -169,7 +170,7 @@ module Gloss
         ]
         method_definition = RBS::AST::Members::MethodDefinition.new(
           name: node[:name].to_sym,
-          kind: @past_module_function ? :singleton_instance : receiver ? :singleton : :instance,
+          kind: @after_module_function ? :singleton_instance : receiver ? :singleton : :instance,
           types: method_types,
           annotations: EMPTY_ARRAY, # TODO
           location: build_location(node),
@@ -214,7 +215,7 @@ module Gloss
         when "require_relative"
           @on_new_file_referenced.call(name, true) if @on_new_file_referenced
         when "module_function"
-          @past_module_function = true
+          @after_module_function = true
         end
         src.write_ln(call)
 

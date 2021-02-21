@@ -300,4 +300,73 @@ RSpec.describe Gloss::TypeChecker do
 MSG
     end
   end
+
+  context "for module_function" do
+    it "does not identify methods above module_function as singleton_instance" do
+      gls = <<-GLS
+module A
+  def not_sing_inst; end
+
+  module_function
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      meth = a_def.members.find { |m| m.name == :not_sing_inst  }
+      expect(meth.kind).to eq :instance
+    end
+
+    it "identifies methods below module_function as singleton_instance" do
+      gls = <<-GLS
+module A
+  def not_sing_inst; end
+
+  module_function
+
+  def sing_inst1; end
+  def sing_inst2; end
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      meth1 = a_def.members.find { |m| m.name == :not_sing_inst  }
+      meth2 = a_def.members.find { |m| m.name == :sing_inst1  }
+      meth3 = a_def.members.find { |m| m.name == :sing_inst2  }
+      expect(meth1.kind).to eq :instance
+      expect(meth2.kind).to eq :singleton_instance
+      expect(meth3.kind).to eq :singleton_instance
+    end
+
+    it "does not identify methods in a nested module as singleton_instance" do
+      gls = <<-GLS
+module A
+  module_function
+
+  module B
+    def not_sing_inst; end
+  end
+
+  def sing_inst; end
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      b_def = a_def.members.find { |m| m.name.name == :B }
+      meth = b_def.members.find { |m| m.name == :not_sing_inst  }
+      expect(meth.kind).to eq :instance
+      expect(a_def.members.find { |m| m.name == :sing_inst }.kind).to eq :singleton_instance
+    end
+  end
 end

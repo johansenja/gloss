@@ -59,13 +59,17 @@ case e
       end
 true
     end
+    def ready_for_checking!
+      @top_level_decls.each do |decl|
+        @env << decl
+      end
+      @env = @env.resolve_type_names
+
+      @steep_target.instance_variable_set("@environment", @env)
+    end
     def check_types(filepath, rb_str)
       @steep_target.add_source(filepath, rb_str)
-      @top_level_decls.each() { |decl|
-        @env.<<(decl)
-      }
-      @env = @env.resolve_type_names
-      @steep_target.instance_variable_set("@environment", @env)
+      ready_for_checking!
       @steep_target.type_check
       (if @steep_target.status
 .is_a?(Steep::Project::Target::SignatureErrorStatus)

@@ -17,7 +17,7 @@ module Gloss
       @current_scope = nil
       @tree = tree_hash
       @type_checker = type_checker
-      @past_module_function = false
+      @after_module_function = false
     end
     def run()
       rb_output = visit_node(@tree)
@@ -77,7 +77,8 @@ case node.[](:"type")
 .add(class_type)
           end)
         when "ModuleNode"
-          already_module_function = @past_module_function.dup
+          existing_module_function_state = @after_module_function.dup
+          @after_module_function = false
           module_name = visit_node(node.[](:"name"))
           src.write_ln("module #{module_name}")
           current_namespace = (if @current_scope
@@ -104,9 +105,7 @@ case node.[](:"type")
 .add(module_type)
           end)
           src.write_ln("end")
-          (if @past_module_function && !already_module_function
-            @past_module_function = false
-          end)
+          @after_module_function = existing_module_function_state
         when "DefNode"
           args = render_args(node)
           receiver = (if node.[](:"receiver")
@@ -130,7 +129,7 @@ case node.[](:"type")
             nil
           end), location:           build_location(node))]
           method_definition = RBS::AST::Members::MethodDefinition.new(name:           node.[](:"name")
-.to_sym, kind:           (if @past_module_function
+.to_sym, kind:           (if @after_module_function
             :"singleton_instance"
           else
             (if receiver
@@ -206,7 +205,7 @@ case name
                 @on_new_file_referenced.call(name, true)
               end)
             when "module_function"
-              @past_module_function = true
+              @after_module_function = true
           end
           src.write_ln(call)
         when "Block"
