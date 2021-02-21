@@ -4,6 +4,7 @@
   ##### See src/ to make changes
 
 require "pry-byebug"
+require 'set'
 module Gloss
   class TypeChecker
     Project = Struct.new(:"targets")
@@ -13,7 +14,7 @@ module Gloss
 .tap() { |o|
         o.allow_unknown_constant_assignment=(true)
       }, source_patterns: ["gloss.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
-      @top_level_decls = {}
+      @top_level_decls = Set.new
       @rbs_gem_dir = Utils.gem_path_for("rbs")
       env_loader = RBS::EnvironmentLoader.new
       @env = RBS::Environment.from_loader(env_loader)
@@ -22,9 +23,9 @@ module Gloss
       loader = Steep::Project::FileLoader.new(project: project)
       # loader.load_signatures
     end
-    def run(rb_str)
+    def run(filepath, rb_str)
       begin
-        valid_types = check_types(rb_str)
+        valid_types = check_types(filepath, rb_str)
       rescue ParseError => e
         throw(:"error", "")
       rescue  => e
@@ -35,7 +36,7 @@ module Gloss
 .map() { |e|
 case e
             when Steep::Diagnostic::Ruby::NoMethod
-              "Unknown method :#{e.method}, location: #{e.type
+              "Unknown method :#{e.method} for #{e.type.name}; location: #{e.type
 .location
 .inspect}"
             when Steep::Diagnostic::Ruby::MethodBodyTypeMismatch
@@ -57,9 +58,9 @@ case e
       end
 true
     end
-    def check_types(rb_str)
-      @steep_target.add_source("gloss.rb", rb_str)
-      @top_level_decls.each() { |_, decl|
+    def check_types(filepath, rb_str)
+      @steep_target.add_source(filepath, rb_str)
+      @top_level_decls.each() { |decl|
         @env.<<(decl)
       }
       @env = @env.resolve_type_names
@@ -74,6 +75,8 @@ true
           msg = case e
                 when Steep::Diagnostic::Signature::UnknownTypeName
                   "Unknown type name: #{e.name.name} (#{e.location.source[/^.*$/]})"
+                when Steep::Diagnostic::Signature::InvalidTypeApplication
+                  "Invalid type application: #{e.header_line}"
                 else
                   e.exception.error_value.value
                 end

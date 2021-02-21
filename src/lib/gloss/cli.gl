@@ -36,13 +36,19 @@ module Gloss
             entry_tree = Parser.new(File.read(Config.entrypoint)).run
             Visitor.new(entry_tree, type_checker).run
             (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
-              p "Building #{fp}"
-              content = File.read(fp)
-              tree_hash = Parser.new(content).run
-              rb_output = Visitor.new(tree_hash, type_checker).run
-              type_checker.run(rb_output)
-
-              p "Writing #{fp}"
+              fp = File.absolute_path(fp)
+              preloaded_output = OUTPUT_BY_PATH.fetch(fp) { nil }
+              if preloaded_output
+                rb_output = preloaded_output
+              else
+                Gloss.logger.info "Building #{fp}"
+                content = File.read(fp)
+                tree_hash = Parser.new(content).run
+                rb_output = Visitor.new(tree_hash, type_checker).run
+              end
+              Gloss.logger.info "Type checking #{fp}"
+              type_checker.run(fp, rb_output)
+              Gloss.logger.info "Writing #{fp}"
               Writer.new(rb_output, fp).run
             end
           end

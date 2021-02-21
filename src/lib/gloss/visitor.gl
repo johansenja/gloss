@@ -46,8 +46,10 @@ module Gloss
           @eval_vars = true
           superclass_output = visit_node(node[:superclass])
           @eval_vars = false
+          args = Array.new
           if node.dig(:superclass, :type) == "Generic"
             superclass_output = superclass_output[/^[^\[]+/] || superclass_output
+            args = node.dig(:superclass, :args).map { |n| RBS::Parser.parse_type(visit_node(n)) }
           end
 
           class_name_index = superclass_output.index(/[^(?:::)]+\z/) || 0
@@ -58,7 +60,7 @@ module Gloss
               namespace: method(:Namespace).call(namespace),
               name: superclass_name.to_sym,
             ),
-            args: Array.new,
+            args: args,
             location: build_location(node),
           )
         end
@@ -88,8 +90,8 @@ module Gloss
 
         @current_scope.members << class_type if @current_scope
 
-        if @type_checker
-          @type_checker.top_level_decls[class_type.name.name] = class_type unless @current_scope
+        if @type_checker && !@current_scope
+          @type_checker.top_level_decls.add(class_type)
         end
       when "ModuleNode"
         module_name = visit_node node[:name]
@@ -118,8 +120,8 @@ module Gloss
 
         @current_scope.members << module_type if @current_scope
 
-        if @type_checker
-          @type_checker.top_level_decls[module_type.name.name] = module_type unless @current_scope
+        if @type_checker && !@current_scope
+          @type_checker.top_level_decls.add(module_type)
         end
         src.write_ln "end"
       when "DefNode"

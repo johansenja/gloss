@@ -58,16 +58,20 @@ case command
                   files
                 end)
 .each() { |fp|
-  Gloss.logger.info("Building #{fp}")
-                  content = File.read(fp)
-                  tree_hash = Parser.new(content)
-.run
-                  rb_output = Visitor.new(tree_hash, type_checker)
-.run
-                  type_checker.run(rb_output)
-                  Gloss.logger.info("Writing #{fp}")
-                  Writer.new(rb_output, fp)
-.run
+              fp = File.absolute_path(fp)
+              preloaded_output = OUTPUT_BY_PATH.fetch(fp) { nil }
+              if preloaded_output
+                rb_output = preloaded_output
+              else
+                Gloss.logger.info "Building #{fp}"
+                content = File.read(fp)
+                tree_hash = Parser.new(content).run
+                rb_output = Visitor.new(tree_hash, type_checker).run
+              end
+              Gloss.logger.info "Type checking #{fp}"
+              type_checker.run(fp, rb_output)
+              Gloss.logger.info "Writing #{fp}"
+              Writer.new(rb_output, fp).run
                 }
               end)
             end)

@@ -17,15 +17,15 @@ module Gloss
     include Utils
     attr_reader(:"tree")
     def initialize(tree_hash, type_checker = nil, on_new_file_referenced = nil)
+      @on_new_file_referenced = on_new_file_referenced
       @indent_level = 0
       @inside_macro = false
       @eval_vars = false
       @current_scope = nil
       @tree = tree_hash
       @type_checker = type_checker
-      @on_new_file_referenced = on_new_file_referenced
     end
-    def run
+    def run()
       rb_output = visit_node(@tree)
       with_file_header(rb_output)
     end
@@ -44,27 +44,26 @@ case node.[](:"type")
           superclass_output = ""
           (if node.[](:"superclass")
             @eval_vars = true
-            superclass_output = visit_node(node[:superclass])
+            superclass_output = visit_node(node.[](:"superclass"))
             @eval_vars = false
-            if node.dig(:superclass, :type) == "Generic"
-              superclass_output = superclass_output[/^[^\[]+/] || superclass_output
-            end
-
+            args = Array.new
+            (if node.dig(:"superclass", :"type")
+.==("Generic")
+              superclass_output = superclass_output.[](/^[^\[]+/) || superclass_output
+              args = node.dig(:"superclass", :"args")
+.map() { |n|
+                RBS::Parser.parse_type(visit_node(n))
+              }
+            end)
             class_name_index = superclass_output.index(/[^(?:::)]+\z/) || 0
-            namespace = superclass_output[0, class_name_index]
-            superclass_name = superclass_output[/[^(?:::)]+\z/] || superclass_output
-            superclass_type = RBS::AST::Declarations::Class::Super.new(
-              name: RBS::TypeName.new(
-                namespace: method(:Namespace).call(namespace),
-                name: superclass_name.to_sym,
-              ),
-              args: Array.new,
-              location: build_location(node),
-            )
+            namespace = superclass_output.[](0, class_name_index)
+            superclass_name = superclass_output.[](/[^(?:::)]+\z/) || superclass_output
+            superclass_type = RBS::AST::Declarations::Class::Super.new(name:             RBS::TypeName.new(namespace:             method(:"Namespace")
+.call(namespace), name:             superclass_name.to_sym), args: args, location:             build_location(node))
           end)
-          src.write_ln("class #{class_name}#{(unless superclass_output.blank?
+          src.write_ln("class #{class_name}#{unless           superclass_output.blank?
             " < #{superclass_output}"
-          end)}")
+          end}")
           class_type = RBS::AST::Declarations::Class.new(name:           RBS::TypeName.new(namespace: current_namespace, name:           class_name.to_sym), type_params:           RBS::AST::Declarations::ModuleTypeParams.new, super_class: superclass_type, members:           Array.new, annotations:           Array.new, location:           build_location(node), comment:           node.[](:"comment"))
           old_parent_scope = @current_scope
           @current_scope = class_type
@@ -79,12 +78,9 @@ case node.[](:"type")
             @current_scope.members
 .<<(class_type)
           end)
-          (if @type_checker
-            unless @current_scope
-              @type_checker.top_level_decls
-.[]=(class_type.name
-.name, class_type)
-            end
+          (if @type_checker && !@current_scope
+            @type_checker.top_level_decls
+.add(class_type)
           end)
         when "ModuleNode"
           module_name = visit_node(node.[](:"name"))
@@ -108,12 +104,9 @@ case node.[](:"type")
             @current_scope.members
 .<<(module_type)
           end)
-          (if @type_checker
-            unless @current_scope
-              @type_checker.top_level_decls
-.[]=(module_type.name
-.name, module_type)
-            end
+          (if @type_checker && !@current_scope
+            @type_checker.top_level_decls
+.add(module_type)
           end)
           src.write_ln("end")
         when "DefNode"
@@ -137,10 +130,10 @@ case node.[](:"type")
             RBS::Types::Block.new(type:             RBS::Types::Function.new(required_positionals:             Array.new, optional_positionals:             Array.new, rest_positionals: nil, trailing_positionals:             Array.new, required_keywords:             Hash.new, optional_keywords:             Hash.new, rest_keywords: nil, return_type:             RBS::Types::Bases::Any.new(location:             build_location(node))), required: !!node.[](:"block_arg") || node.[](:"yield_arg_count"))
           else
             nil
-          end), location:         build_location(node))]
+          end), location:           build_location(node))]
           method_definition = RBS::AST::Members::MethodDefinition.new(name:           node.[](:"name")
 .to_sym, kind:           (if receiver
-            :"class"
+            :"singleton"
           else
             :"instance"
           end), types: method_types, annotations: EMPTY_ARRAY, location:           build_location(node), comment:           node.[](:"comment"), overload: false)
@@ -201,12 +194,14 @@ EMPTY_ARRAY          }
           else
             nil
           end)
-          name = node[:name]
+          name = node.[](:"name")
           call = "#{obj}#{name}#{opening_delimiter}#{args}#{(if has_parens
             ")"
           end)}#{block}"
+          (if @on_new_file_referenced && name.==("require_relative")
+            @on_new_file_referenced.call(name, true)
+          end)
           src.write_ln(call)
-          @on_new_file_referenced.call(name, true) if @on_new_file_referenced && name == "require_relative"
         when "Block"
           args = render_args(node)
           src.write("{ #{args.[](:"representation")
@@ -250,9 +245,11 @@ EMPTY_ARRAY          }
         when "Path"
           src.write(node.[](:"value"))
         when "Require"
-          path = node[:value]
+          path = node.[](:"value")
           src.write_ln("require \"#{path}\"")
-          @on_new_file_referenced.call(path, false) if @on_new_file_referenced
+          (if @on_new_file_referenced
+            @on_new_file_referenced.call(path, false)
+          end)
         when "Assign", "OpAssign"
           src.write_ln("#{visit_node(node.[](:"target"))} #{node.[](:"op")}= #{visit_node(node.[](:"value"))
 .strip}")
@@ -441,8 +438,12 @@ EMPTY_ARRAY          }
           src.write("return#{val}")
         when "TypeDeclaration"
           src.write_ln("# @type var #{visit_node(node.[](:"var"))}: #{visit_node(node.[](:"declared_type"))}")
-          value = node[:value] ? " = #{visit_node node[:value]}" : nil
-          src.write_ln "#{visit_node(node[:var])}#{value}"
+          value = (if node.[](:"value")
+            " = #{visit_node(node.[](:"value"))}"
+          else
+            nil
+          end)
+          src.write_ln("#{visit_node(node.[](:"var"))}#{value}")
         when "ExceptionHandler"
           src.write_ln("begin")
           indented(src) { ||
@@ -625,20 +626,21 @@ a && a.empty?      }
       representation = "(#{contents})"
       rp_args = rp.map() { |a|
         RBS::Types::Function::Param.new(name:         visit_node(a)
-.to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         build_location(a)))
       }
       op_args = op.map() { |a|
         RBS::Types::Function::Param.new(name:         visit_node(a)
-.to_sym, type:         RBS::Types::Bases::Any.new(location:         a.[](:"location")))
+.to_sym, type:         RBS::Types::Bases::Any.new(location:         build_location(a)))
       }
-      rpa = rest_p ? RBS::Types::Function::Param.new(
-              name: rest_p.to_sym,
-              type: RBS::Types::Bases::Any.new(location: build_location(node))
-            ) : nil
+      rpa = (if rest_p
+        RBS::Types::Function::Param.new(name:         rest_p.to_sym, type:         RBS::Types::Bases::Any.new(location:         build_location(node)))
+      else
+        nil
+      end)
 {:representation => representation,
 :types => {:required_positionals => rp_args,
 :optional_positionals => op_args,
-          rest_positionals: rpa,
+:rest_positionals => rpa,
 :trailing_positionals => EMPTY_ARRAY,
 :required_keywords => node.[](:"req_kw_args") || EMPTY_HASH,
 :optional_keywords => node.[](:"opt_kw_args") || EMPTY_HASH,
@@ -651,13 +653,9 @@ a && a.empty?      }
 }.freeze}.freeze
     end
     def build_location(node)
-      return nil unless node[:location]
-
-      RBS::Location.new(
-        buffer: RBS::Buffer.new(@file_path, @file_content),
-        start_pos: node[:location][:start],
-        end_pos: node[:location][:end]
-      )
+      unless       node.[](:"location")
+        return nil
+      end
     end
   end
 end

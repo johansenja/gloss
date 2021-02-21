@@ -50,7 +50,7 @@ module Gloss
 
     def run
       @files_to_process.each do |path_string|
-        next if @processed_files.member? path_string
+        next if @processed_files.member?(path_string) || OUTPUT_BY_PATH[path_string]
 
         Gloss.logger.debug "Loading #{path_string}"
         path = absolute_path(path_string)
@@ -63,7 +63,7 @@ module Gloss
             handle_require pa
           end
         end
-        OUTPUT_BY_PATH[path_string] ||= Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
+        OUTPUT_BY_PATH[path_string] = Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
         @processed_files.add path_string
       end
 
