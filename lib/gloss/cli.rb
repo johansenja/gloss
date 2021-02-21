@@ -52,12 +52,8 @@ case command
 .run
                 Visitor.new(entry_tree, type_checker)
 .run
-                (if files.empty?
-                  Dir.glob("#{Config.src_dir}/**/*.gl")
-                else
-                  files
-                end)
-.each() { |fp|
+            files = Dir.glob("#{Config.src_dir}/**/*.gl") if files.empty?
+            files.each do |fp|
               fp = File.absolute_path(fp)
               preloaded_output = OUTPUT_BY_PATH.fetch(fp) { nil }
               if preloaded_output
@@ -70,9 +66,13 @@ case command
               end
               Gloss.logger.info "Type checking #{fp}"
               type_checker.run(fp, rb_output)
+            end
+            # ensure all files are type checked before anything is written
+            files.each do |fp|
+              rb_output = OUTPUT_BY_PATH.fetch(fp)
               Gloss.logger.info "Writing #{fp}"
               Writer.new(rb_output, fp).run
-                }
+            end
               end)
             end)
           else

@@ -35,7 +35,8 @@ module Gloss
           elsif command == "build"
             entry_tree = Parser.new(File.read(Config.entrypoint)).run
             Visitor.new(entry_tree, type_checker).run
-            (files.empty? ? Dir.glob("#{Config.src_dir}/**/*.gl") : files).each do |fp|
+            files = Dir.glob("#{Config.src_dir}/**/*.gl") if files.empty?
+            files.each do |fp|
               fp = File.absolute_path(fp)
               preloaded_output = OUTPUT_BY_PATH.fetch(fp) { nil }
               if preloaded_output
@@ -48,6 +49,10 @@ module Gloss
               end
               Gloss.logger.info "Type checking #{fp}"
               type_checker.run(fp, rb_output)
+            end
+            # ensure all files are type checked before anything is written
+            files.each do |fp|
+              rb_output = OUTPUT_BY_PATH.fetch(fp)
               Gloss.logger.info "Writing #{fp}"
               Writer.new(rb_output, fp).run
             end
