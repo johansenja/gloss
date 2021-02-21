@@ -59,12 +59,11 @@ case e
       end
 true
     end
-    def ready_for_checking!
-      @top_level_decls.each do |decl|
-        @env << decl
-      end
+    def ready_for_checking!()
+      @top_level_decls.each() { |decl|
+        @env.<<(decl)
+      }
       @env = @env.resolve_type_names
-
       @steep_target.instance_variable_set("@environment", @env)
     end
     def check_types(filepath, rb_str)
