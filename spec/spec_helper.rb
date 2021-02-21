@@ -1,5 +1,6 @@
 require "gloss"
 require "fileutils"
+require_relative "support"
 
 TESTING_DIR = "./tmp"
 
@@ -15,4 +16,5 @@ RSpec.configure do |config|
   config.after(:suite) do
     FileUtils.rm_r TESTING_DIR
   end
+  config.include SpecHelpers
 end

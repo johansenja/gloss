@@ -22,13 +22,8 @@ nil => nil,
       @logger = Logger.new((if real_log_level
         STDOUT
       else
-        nil
+        IO::NULL
       end))
-      formatter = Logger::Formatter.new
-      @logger.formatter=(proc() { |severity, datetime, progname, msg|
-        formatter.call(severity, datetime, progname, msg)
-      })
-@logger
     end)
   end
 end

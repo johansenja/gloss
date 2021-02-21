@@ -1,0 +1,4 @@
+class String
+  def blank?: () -> bool
+  def blank_as?: () -> bool
+end

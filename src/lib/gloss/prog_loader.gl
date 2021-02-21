@@ -1,0 +1,133 @@
+require "rubygems/gem_runner"
+
+module Gloss
+  OUTPUT_BY_PATH = Hash.new
+
+  class ProgLoader
+    def initialize
+      entrypoint = Config.entrypoint
+      if entrypoint == nil || entrypoint == ""
+        throw :error, "Entrypoint is not yet set in .gloss.yml"
+      end
+      @files_to_process = [
+        Utils.absolute_path(Config.entrypoint),
+        # __dir__ is typed as String? - but it shouldn't be nil here
+        Utils.absolute_path(File.join((__dir__||""), "..", "..", "sig", "core.rbs"))
+      ]
+      @processed_files = Set.new
+      @type_checker = TypeChecker.new
+    end
+
+    def run
+      @files_to_process.each do |path_string|
+        # currently steep would give an `unexpected jump` if next was used
+        unless @processed_files.member?(path_string) || OUTPUT_BY_PATH.[](path_string)
+          Gloss.logger.debug "Loading #{path_string}"
+          path = Utils.absolute_path(path_string)
+          file_contents = File.open(path).read
+          contents_tree = Parser.new(file_contents).run
+          on_new_file_referenced = proc do |pa, relative|
+            if relative
+              handle_require_relative pa
+            else
+              handle_require pa
+            end
+          end
+          OUTPUT_BY_PATH.[](path_string) = Visitor.new(contents_tree, @type_checker, on_new_file_referenced).run
+          @processed_files.add path_string
+        end
+      end
+
+      @type_checker
+    end
+
+    STDLIB_TYPE_DEPENDENCIES = {
+      "yaml" => %w[pstore dbm],
+      "rbs" => %w[logger set tsort],
+      "logger" => %w[monitor],
+    }
+
+    private def handle_require(path)
+      if path.start_with? "."
+        base = File.join(Dir.pwd, path)
+        fp = base + ".gl"
+        if File.exist? fp
+          @files_to_process << fp
+        end
+        return
+      end
+
+      # look for .gl file if the "require" refers to the lib directory of current project dir
+      full = File.absolute_path("#{File.join(Config.src_dir, "lib", path)}.gl")
+      pathn = Pathname.new full
+      if pathn.file?
+        @files_to_process << pathn.to_s
+      else
+        # no .gl file available - .rbs file available?
+        # TODO: verify file is still actually requireable
+        pathn = Pathname.new("#{File.join(Dir.pwd, "sig", path)}.rbs")
+        gem_path = Utils.gem_path_for(path)
+        if gem_path
+          sig_files = Dir.glob(File.absolute_path(File.join(gem_path, "..", "..", "sig", "**", "*.rbs")))
+          if sig_files.length.positive?
+            sig_files.each do |fp|
+              @type_checker.load_sig_path fp
+            end
+            @processed_files.add path
+            rbs_type_deps = STDLIB_TYPE_DEPENDENCIES.fetch(path) { nil }
+            if rbs_type_deps
+            rbs_type_deps.each { |d| handle_require d }
+            end
+            return
+          end
+        end
+
+        if pathn.file?
+          @type_checker.load_sig_path(pathn.to_s)
+          @processed_files.add pathn.to_s
+        else
+          rbs_stdlib_dir = File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", path))
+          if Pathname.new(rbs_stdlib_dir).exist?
+            load_rbs_from_require_path(path)
+            rbs_type_deps = STDLIB_TYPE_DEPENDENCIES.fetch(path) { nil }
+            if rbs_type_deps
+              rbs_type_deps.each { |d| load_rbs_from_require_path d }
+            end
+          elsif Config.strict_require
+            throw :error, "Cannot resolve require path for #{path}"
+          else
+            Gloss.logger.debug "No path found for #{path}"
+          end
+        end
+      end
+    end
+
+    private def handle_require_relative(path)
+      base = File.join(@filepath, "..", path)
+      pn : String? = nil
+      Gem.suffixes.each do |ext|
+        full = File.absolute_path(base + ext)
+        pn = full if File.exist?(full)
+      end
+
+      if pn
+        @files_to_process << pn unless @files_to_process.include? pn
+      elsif Config.strict_require
+        throw :error, "Cannot resolve require path for #{pn}"
+      else
+        Gloss.logger.debug "No path found for #{path}"
+      end
+    end
+
+    private def rbs_stdlib_path_for(libr)
+      File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", libr))
+    end
+
+    private def load_rbs_from_require_path(path)
+      Dir.glob(File.join(rbs_stdlib_path_for(path), "**", "*.rbs")).each do |fp|
+        @type_checker.load_sig_path(fp)
+        @processed_files.add fp
+      end
+    end
+  end
+end

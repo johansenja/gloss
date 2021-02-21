@@ -2,7 +2,7 @@ RSpec.describe Gloss::TypeChecker do
   let!(:type_checker) { Gloss::TypeChecker.new }
 
   it "reports type errors in type notations" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "ClassNode",
         name: {
@@ -42,7 +42,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports type errors for human error" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [
@@ -112,7 +112,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports no errors for valid code" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [{
@@ -176,7 +176,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports errors for invalid variables" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "TypeDeclaration",
         var: {
@@ -204,7 +204,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "does not report errors for valid variables" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "TypeDeclaration",
         var: {
@@ -228,7 +228,7 @@ RSpec.describe Gloss::TypeChecker do
   end
 
   it "reports errors when changing a variable's type" do
-    output = Gloss::Builder.new(
+    output = Gloss::Visitor.new(
       {
         type: "CollectionNode",
         children: [{
@@ -298,6 +298,75 @@ RSpec.describe Gloss::TypeChecker do
     Location: sig/a.rbs:1:0...1:7
     Message: "invalid"
 MSG
+    end
+  end
+
+  context "for module_function" do
+    it "does not identify methods above module_function as singleton_instance" do
+      gls = <<-GLS
+module A
+  def not_sing_inst; end
+
+  module_function
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      meth = a_def.members.find { |m| m.name == :not_sing_inst  }
+      expect(meth.kind).to eq :instance
+    end
+
+    it "identifies methods below module_function as singleton_instance" do
+      gls = <<-GLS
+module A
+  def not_sing_inst; end
+
+  module_function
+
+  def sing_inst1; end
+  def sing_inst2; end
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      meth1 = a_def.members.find { |m| m.name == :not_sing_inst  }
+      meth2 = a_def.members.find { |m| m.name == :sing_inst1  }
+      meth3 = a_def.members.find { |m| m.name == :sing_inst2  }
+      expect(meth1.kind).to eq :instance
+      expect(meth2.kind).to eq :singleton_instance
+      expect(meth3.kind).to eq :singleton_instance
+    end
+
+    it "does not identify methods in a nested module as singleton_instance" do
+      gls = <<-GLS
+module A
+  module_function
+
+  module B
+    def not_sing_inst; end
+  end
+
+  def sing_inst; end
+end
+      GLS
+      Gloss::Visitor.new(
+        Gloss::Parser.new(gls).run,
+        type_checker
+      ).run
+      type_checker.ready_for_checking!
+      a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
+      b_def = a_def.members.find { |m| m.name.name == :B }
+      meth = b_def.members.find { |m| m.name == :not_sing_inst  }
+      expect(meth.kind).to eq :instance
+      expect(a_def.members.find { |m| m.name == :sing_inst }.kind).to eq :singleton_instance
     end
   end
 end

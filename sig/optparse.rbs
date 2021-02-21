@@ -1,0 +1,6 @@
+# TODO: remove once stdlib gets types for this. Note - RBS
+# already provides some types for this from its `sig` directory - so
+# only adding #parse here
+class OptionParser
+  def parse: (Array[String] argv) -> untyped
+end

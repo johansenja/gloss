@@ -15,12 +15,7 @@ module Gloss
         nil => nil,
         "" => nil
       }.fetch env_log_level
-      @logger = Logger.new(real_log_level ? STDOUT : nil)
-      formatter = Logger::Formatter.new
-      @logger.formatter = proc do |severity, datetime, progname, msg|
-        formatter.call(severity, datetime, progname, msg)
-      end
-      @logger
+      @logger = Logger.new(real_log_level ? STDOUT : IO::NULL)
     end
   end
 end
