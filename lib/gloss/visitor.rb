@@ -104,7 +104,9 @@ case node.[](:"type")
 .add(module_type)
           end)
           src.write_ln("end")
-          @past_module_function = false if @past_module_function && !already_module_function
+          (if @past_module_function && !already_module_function
+            @past_module_function = false
+          end)
         when "DefNode"
           args = render_args(node)
           receiver = (if node.[](:"receiver")
@@ -128,7 +130,15 @@ case node.[](:"type")
             nil
           end), location:           build_location(node))]
           method_definition = RBS::AST::Members::MethodDefinition.new(name:           node.[](:"name")
-.to_sym, kind: @past_module_function ? :singleton_instance : receiver ? :singleton : :instance, types: method_types, annotations: EMPTY_ARRAY, location:           build_location(node), comment:           node.[](:"comment"), overload: false)
+.to_sym, kind:           (if @past_module_function
+            :"singleton_instance"
+          else
+            (if receiver
+              :"singleton"
+            else
+              :"instance"
+            end)
+          end), types: method_types, annotations: EMPTY_ARRAY, location:           build_location(node), comment:           node.[](:"comment"), overload: false)
           (if @current_scope
             @current_scope.members
 .<<(method_definition)
@@ -190,11 +200,13 @@ EMPTY_ARRAY          }
           call = "#{obj}#{name}#{opening_delimiter}#{args}#{(if has_parens
             ")"
           end)}#{block}"
-          case name
-          when "require_relative"
-            @on_new_file_referenced.call(name, true) if @on_new_file_referenced
-          when "module_function"
-            @past_module_function = true
+case name
+            when "require_relative"
+              (if @on_new_file_referenced
+                @on_new_file_referenced.call(name, true)
+              end)
+            when "module_function"
+              @past_module_function = true
           end
           src.write_ln(call)
         when "Block"

@@ -10,7 +10,7 @@ module Gloss
       @paths = paths
       (if @paths.empty?
         @paths = [File.join(Dir.pwd, Config.src_dir)]
-        @only = /\.gl$/
+        @only = /(?:(\.gl|(?:(?<=\/)[^\.\/]+))\z|\A[^\.\/]+\z)/
       else
         file_names = Array.new
         paths = Array.new

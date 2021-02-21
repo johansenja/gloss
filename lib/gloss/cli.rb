@@ -52,28 +52,36 @@ case command
 .run
                 Visitor.new(entry_tree, type_checker)
 .run
-            files = Dir.glob("#{Config.src_dir}/**/*.gl") if files.empty?
-            files.each do |fp|
-              fp = File.absolute_path(fp)
-              preloaded_output = OUTPUT_BY_PATH.fetch(fp) { nil }
-              if preloaded_output
-                rb_output = preloaded_output
-              else
-                Gloss.logger.info "Building #{fp}"
-                content = File.read(fp)
-                tree_hash = Parser.new(content).run
-                rb_output = Visitor.new(tree_hash, type_checker).run
-              end
-              Gloss.logger.info "Type checking #{fp}"
-              type_checker.run(fp, rb_output)
-            end
-            # ensure all files are type checked before anything is written
-            files.each do |fp|
-              fp = File.absolute_path(fp)
-              rb_output = OUTPUT_BY_PATH.fetch(fp)
-              Gloss.logger.info "Writing #{fp}"
-              Writer.new(rb_output, fp).run
-            end
+                (if files.empty?
+                  files = Dir.glob("#{Config.src_dir}/**/*.gl")
+                end)
+                files.each() { |fp|
+                  fp = File.absolute_path(fp)
+                  preloaded_output = OUTPUT_BY_PATH.fetch(fp) { ||
+nil                  }
+                  (if preloaded_output
+                    rb_output = preloaded_output
+                  else
+                    Gloss.logger
+.info("Building #{fp}")
+                    content = File.read(fp)
+                    tree_hash = Parser.new(content)
+.run
+                    rb_output = Visitor.new(tree_hash, type_checker)
+.run
+                  end)
+                  Gloss.logger
+.info("Type checking #{fp}")
+                  type_checker.run(fp, rb_output)
+                }
+                files.each() { |fp|
+                  fp = File.absolute_path(fp)
+                  rb_output = OUTPUT_BY_PATH.fetch(fp)
+                  Gloss.logger
+.info("Writing #{fp}")
+                  Writer.new(rb_output, fp)
+.run
+                }
               end)
             end)
           else
