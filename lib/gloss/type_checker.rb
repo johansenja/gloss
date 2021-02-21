@@ -64,7 +64,7 @@ true
         @env.<<(decl)
       }
       @env = @env.resolve_type_names
-      @steep_target.instance_variable_set("@environment", env)
+      @steep_target.instance_variable_set("@environment", @env)
       @steep_target.type_check
       (if @steep_target.status
 .is_a?(Steep::Project::Target::SignatureErrorStatus)
@@ -77,8 +77,10 @@ true
                   "Unknown type name: #{e.name.name} (#{e.location.source[/^.*$/]})"
                 when Steep::Diagnostic::Signature::InvalidTypeApplication
                   "Invalid type application: #{e.header_line}"
+                when Steep::Diagnostic::Signature::DuplicatedMethodDefinition
+                  "Duplicated method: #{e.header_line}"
                 else
-                  e.exception.error_value.value
+                  e.header_line
                 end
 "  SignatureSyntaxError:\n    Location: #{e.location}\n    Message: \"#{msg}\""        }
 .join("\n"))

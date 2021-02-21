@@ -6,16 +6,8 @@
 require "pathname"
 require "fileutils"
 module Gloss
-  module Utils
-    module_function
-    def src_path_to_output_path(src_path)
-      src_path.sub("#{Config.src_dir}/", "")
-.sub(/\.gl$/, ".rb")
-    end
-  end
   class Writer
-    include Utils
-    def initialize(content, src_path, output_path = Pathname.new(src_path_to_output_path(src_path)))
+    def initialize(content, src_path, output_path = Pathname.new(Utils.src_path_to_output_path(src_path)))
       @content = content
       @src_path = src_path
       @output_path = output_path

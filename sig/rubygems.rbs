@@ -1,0 +1,9 @@
+module Gem
+  class ConsoleUI
+    attr_reader outs: StringIO
+  end
+
+  def self.ui: () -> Gem::ConsoleUI
+
+  def self.suffixes: () -> Array[String]
+end

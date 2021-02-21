@@ -21,6 +21,7 @@ require "gloss/visitor"
 require "gloss/errors"
 require "gloss/logger"
 require "gloss/prog_loader"
+require "gloss/utils"
 is_ci = ENV.fetch("CI") { ||
 false}
 unless is_ci

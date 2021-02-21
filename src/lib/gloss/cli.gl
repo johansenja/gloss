@@ -52,6 +52,7 @@ module Gloss
             end
             # ensure all files are type checked before anything is written
             files.each do |fp|
+              fp = File.absolute_path(fp)
               rb_output = OUTPUT_BY_PATH.fetch(fp)
               Gloss.logger.info "Writing #{fp}"
               Writer.new(rb_output, fp).run

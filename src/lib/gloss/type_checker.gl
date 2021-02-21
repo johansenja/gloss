@@ -54,7 +54,7 @@ module Gloss
             when Steep::Diagnostic::Ruby::UnexpectedBlockGiven
               "Unexpected block given"
             else
-              e.inspect
+              "#{e.header_line}\n#{e.inspect}"
             end
         }.join("\n")
         throw :error, errors
@@ -71,7 +71,7 @@ module Gloss
       end
       @env = @env.resolve_type_names
 
-      @steep_target.instance_variable_set("@environment", env)
+      @steep_target.instance_variable_set("@environment", @env)
 
       @steep_target.type_check
 
@@ -82,8 +82,10 @@ module Gloss
                   "Unknown type name: #{e.name.name} (#{e.location.source[/^.*$/]})"
                 when Steep::Diagnostic::Signature::InvalidTypeApplication
                   "Invalid type application: #{e.header_line}"
+                when Steep::Diagnostic::Signature::DuplicatedMethodDefinition
+                  "Duplicated method: #{e.header_line}"
                 else
-                  e.exception.error_value.value
+                  e.header_line
                 end
           <<~MSG
             SignatureSyntaxError:

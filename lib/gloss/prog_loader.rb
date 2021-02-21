@@ -2,47 +2,18 @@
 
 require "rubygems/gem_runner"
 
-
 module Gloss
-  module Utils
-    module_function
-
-    def absolute_path(path)
-      pn = Pathname.new(path)
-      if pn.absolute?
-        pn.to_s
-      else
-        ap = File.absolute_path path
-        if File.exist? ap
-          ap
-        else
-          throw :error, "File path #{path} does not exist (also looked for #{ap})"
-        end
-      end
-    end
-
-    def gem_path_for(gem_name)
-      Gem.ui.instance_variable_set :@outs, StringIO.new
-      Gem::GemRunner.new.run(["which", gem_name])
-      Gem.ui.outs.string
-    rescue SystemExit => e
-      nil
-    end
-  end
-
   OUTPUT_BY_PATH = {}
 
   class ProgLoader
-    include Utils
-
     def initialize
       entrypoint = Config.entrypoint
       if entrypoint.nil? || entrypoint == ""
         throw :error, "Entrypoint is not yet set in .gloss.yml"
       end
       @files_to_process = [
-        absolute_path(Config.entrypoint),
-        absolute_path(File.join(__dir__, "..", "..", "sig", "core.rbs"))
+        Utils.absolute_path(Config.entrypoint),
+        Utils.absolute_path(File.join(__dir__, "..", "..", "sig", "core.rbs"))
       ]
       @processed_files = Set.new
       @type_checker = TypeChecker.new
@@ -53,7 +24,7 @@ module Gloss
         next if @processed_files.member?(path_string) || OUTPUT_BY_PATH[path_string]
 
         Gloss.logger.debug "Loading #{path_string}"
-        path = absolute_path(path_string)
+        path = Utils.absolute_path(path_string)
         file_contents = File.open(path).read
         contents_tree = Parser.new(file_contents).run
         on_new_file_referenced = proc do |pa, relative|
@@ -97,7 +68,7 @@ module Gloss
         # no .gl file available - .rbs file available?
         # TODO: verify file is still actually requireable
         pathn = Pathname.new("#{File.join(Dir.pwd, "sig", path)}.rbs")
-        gem_path = gem_path_for(path)
+        gem_path = Utils.gem_path_for(path)
         if gem_path
           sig_files = Dir.glob(File.absolute_path(File.join(gem_path, "..", "..", "sig", "**", "*.rbs")))
           if sig_files.length.positive?
