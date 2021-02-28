@@ -11,12 +11,12 @@ shards:
 
 ifeq "$(PLATFORM)" "Darwin"
 build: ./src/gloss.cr
-	$(CRYSTAL) build  --link-flags "-dynamic -bundle -Wl,-undefined,dynamic_lookup" $< -o $(TARGET).bundle
+	$(CRYSTAL) build  --link-flags "-dynamic -bundle -Wl,-undefined,dynamic_lookup" $< -o $(TARGET).bundle --no-debug --release
 endif
 
 ifeq "$(PLATFORM)" "Linux"
 build: ./src/gloss.cr
-	$(CRYSTAL) build $< --link-flags "-dynamic -Wl,-undefined,dynamic_lookup" -o $(TARGET)
+	$(CRYSTAL) build $< --link-flags -lruby -o $(TARGET).so --no-debug --release
 endif
 
 clean:

@@ -17,8 +17,9 @@ RSpec::Core::RakeTask.new :spec  do |spec|
   spec.pattern = 'spec/**/*_spec.rb'
 end
 
+Rake::Task[:build].clear
 task :build do
-  `cd ext/gloss && make && cd -`
+  sh "cd", "ext/gloss", "&&" ,"make", "&&", "cd", "-"
 end
 
 task :default => [:spec]
