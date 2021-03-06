@@ -4,7 +4,7 @@ require "./cr_ast"
 require "./rb_ast"
 require "./parser"
 
-def parse_string(self : CrRuby::VALUE, str : CrRuby::VALUE)
+def parse_string(_self : CrRuby::VALUE, str : CrRuby::VALUE)
   st = CrRuby.rb_str_to_str(str)
   string = String.new(CrRuby.rb_string_value_cstr(pointerof(st)))
 
