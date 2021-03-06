@@ -18,7 +18,9 @@ RSpec::Core::RakeTask.new :spec  do |spec|
 end
 
 task :build do
-  sh "cd", "ext/gloss", "&&", "make", "all", "&&", "cd", "-"
+  sh "cd", "ext/gloss"
+  sh "make", "all"
+  sh "cd", "-"
 end
 
 task :default => [:spec]
