@@ -26,8 +26,11 @@ jobs:
         run: gem install bundler:2.2.3
       - name: install gems
         run: bundle install --jobs 4 --retry 3
+      - name: Compile extension
+        run: make
+        working-directory: ext/gloss
       - name: Run tests
-        run: rake build_gem && rake
+        run: rake
       - name: Install dependencies
         run: shards install
         working-directory: ext/gloss
