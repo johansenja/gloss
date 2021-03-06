@@ -1,6 +1,19 @@
 CRYSTAL = crystal
-TARGET = ../../lib/gls
 PLATFORM = $(shell uname -s)
+
+ifeq "$(PLATFORM)" "Darwin"
+TARGET = ../../lib/gls.bundle
+
+clean:
+	rm -f $(TARGET) $(TARGET).dwarf
+endif
+
+ifeq "$(PLATFORM)" "Linux"
+TARGET = ../../lib/gls.so
+
+clean:
+	rm -f $(TARGET)
+endif
 
 install: all
 
@@ -9,15 +22,5 @@ all: clean shards build
 shards:
 	shards
 
-ifeq "$(PLATFORM)" "Darwin"
 build: ./src/gloss.cr
-	$(CRYSTAL) build  --link-flags "-dynamic -bundle -Wl,-undefined,dynamic_lookup" $< -o $(TARGET).bundle --no-debug --release
-endif
-
-ifeq "$(PLATFORM)" "Linux"
-build: ./src/gloss.cr
-	$(CRYSTAL) build $< --link-flags -lruby -o $(TARGET).so --no-debug --release
-endif
-
-clean:
-	rm -f $(TARGET).*
+	$(CRYSTAL) build  --link-flags "-shared -dynamic -Wl,-undefined,dynamic_lookup" $< -o $(TARGET) --release
