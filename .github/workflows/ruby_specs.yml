@@ -22,7 +22,11 @@ jobs:
       image: johansenja/gloss:latest
 
     steps:
-    - name: Install dependencies
-      run: bundle install
-    - name: Run tests
-      run: bundle exec rake build && bundle exec rake spec
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install bundler
+        run: gem install bundler:2.2.3
+      - name: Install dependencies
+        run: bundle install
+      - name: Run tests
+        run: bundle exec rake build && bundle exec rake spec
