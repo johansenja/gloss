@@ -24,7 +24,7 @@ end
 Rake::Task[:build].clear
 
 task :build do
-  sh "cd", "ext/gloss", "&&", "make", "all", "&&", "cd", "-"
+  sh "cd", "ext/gloss", "&&", "make", "all", "&&", "cd", "-", verbose: true
 end
 
 Rake::Task[:release].clear
