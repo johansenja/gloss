@@ -18,12 +18,13 @@ RSpec::Core::RakeTask.new :spec  do |spec|
 end
 
 task :build_gem do
-  sh "ls"
+  sh "echo 0 && pwd && ls && echo '...'"
   sh "cd", "ext/gloss"
-  sh "ls"
+  sh "echo 1 && pwd && ls && echo '...'"
   sh "make", "all"
+  sh "echo 2 && pwd && ls && echo '...'"
   sh "cd", "-"
-  sh "ls"
+  sh "echo 3 && pwd && ls && echo '...'"
 end
 
 task build: [:build_gem]
