@@ -22,11 +22,7 @@ require "gloss/errors"
 require "gloss/logger"
 require "gloss/prog_loader"
 require "gloss/utils"
-is_ci = ENV.fetch("CI") { ||
-false}
-unless is_ci
-  require "gls"
-end
+require "gls"
 EMPTY_ARRAY = Array.new
 .freeze
 EMPTY_HASH = {}.freeze

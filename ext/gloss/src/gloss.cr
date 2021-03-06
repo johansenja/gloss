@@ -21,5 +21,10 @@ fun init = Init_gls
   GC.init
   LibCrystalMain.__crystal_main(0, Pointer(Pointer(UInt8)).null)
   gloss = CrRuby.rb_define_module("Gloss");
-  CrRuby.rb_define_singleton_method(gloss, "parse_buffer", ->parse_string(CrRuby::VALUE, CrRuby::VALUE), 1);
+  CrRuby.rb_define_singleton_method(
+    gloss,
+    "parse_buffer",
+    ->parse_string(CrRuby::VALUE, CrRuby::VALUE),
+    1
+  );
 end

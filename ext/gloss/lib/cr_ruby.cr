@@ -1,8 +1,6 @@
 lib CrRuby
   # every ruby Object is a VALUE
   type VALUE = Void*
-  # ruby method typing
-  type METHOD_FUNC = VALUE, VALUE -> VALUE
 
   # a ruby Class is a VALUE
   $rb_cObject : VALUE
@@ -28,8 +26,11 @@ lib CrRuby
   fun rb_define_module(name: UInt8*) : VALUE
 
   # define ruby method in C
-  fun rb_define_method(klass: VALUE, name: UInt8*, func: METHOD_FUNC, argc: Int32)
+  fun rb_define_method(klass: VALUE, name: UInt8*, func: Proc(CrRuby::VALUE, CrRuby::VALUE,
+                                                              CrRuby::VALUE), argc: Int32)
 
   # define singleton ruby method in C
-  fun rb_define_singleton_method(klass: VALUE, name: UInt8*, func: METHOD_FUNC, argc: Int32)
+  fun rb_define_singleton_method(klass: VALUE, name: UInt8*, func: Proc(CrRuby::VALUE,
+                                                                        CrRuby::VALUE,
+                                                                        CrRuby::VALUE), argc: Int32)
 end
