@@ -35,7 +35,7 @@ jobs:
         run: bundle exec rake build && bundle exec rake spec
       - name: Install dependencies
         run: shards install
-          working_directory: ext/gloss
+        working_directory: ext/gloss
       - name: Run tests
         run: crystal spec
           working_directory: ext/gloss
