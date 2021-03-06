@@ -1,7 +1,6 @@
 # Gloss
 [![Gem Version](https://badge.fury.io/rb/gloss.svg)](https://rubygems.org/gems/gloss)
-[![Ruby Specs](https://github.com/johansenja/gloss/workflows/Ruby%20Specs/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3A%22Ruby+Specs%22)
-[![Crystal Specs](https://github.com/johansenja/gloss/workflows/Crystal%20Specs/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3A%22Crystal+Specs%22)
+[![Tests](https://github.com/johansenja/gloss/workflows/Tests/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3ATests)
 [![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&metric=true&label=downloads%20(total)&total_label=)](https://rubygems.org/gems/gloss)
 [![Current Version](http://ruby-gem-downloads-badge.herokuapp.com/gloss?color=green&label=downloads%20(current%20version)&metric=true)](https://rubygems.org/gems/gloss)
 
