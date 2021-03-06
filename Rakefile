@@ -17,9 +17,12 @@ RSpec::Core::RakeTask.new :spec  do |spec|
   spec.pattern = 'spec/**/*_spec.rb'
 end
 
-Rake::Task[:build].clear
-task :build do
-  sh "cd", "ext/gloss", "&&", "make", "all", "&&", "cd", "-"
+task :build_gem do
+  sh "cd", "ext/gloss"
+  sh "make", "all"
+  sh "cd", "-"
 end
 
-task :default => [:spec]
+task build: [:build_gem]
+
+task default: [:spec]

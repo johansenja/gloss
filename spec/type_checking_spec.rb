@@ -34,9 +34,8 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to throw_symbol :error
     err = catch :error do
-      type_checker.run output
+      type_checker.run "(string)", output
     end
     expect(err).to eq "Invalid return type - expected: ::Integer, actual: ::String"
   end
@@ -104,9 +103,8 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to throw_symbol :error
     err = catch :error do
-      type_checker.run output
+      type_checker.run "string", output
     end
     expect(err).to eq "Unknown method :length, location: nil"
   end
@@ -172,7 +170,7 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect(type_checker.run(output))
+    expect(type_checker.run("string", output))
   end
 
   it "reports errors for invalid variables" do
@@ -196,9 +194,8 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to throw_symbol :error
     err = catch :error do
-      type_checker.run output
+      type_checker.run "(string)", output
     end
     expect(err).to eq "Invalid assignment - cannot assign ::String to type ::Symbol"
   end
@@ -224,7 +221,7 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect(type_checker.run(output))
+    expect(type_checker.run("string", output))
   end
 
   it "reports errors when changing a variable's type" do
@@ -264,41 +261,19 @@ RSpec.describe Gloss::TypeChecker do
       },
       type_checker
     ).run
-    expect { type_checker.run(output) }.to throw_symbol :error
     err = catch :error do
-      type_checker.run output
+      type_checker.run "(string)", output
     end
     expect(err).to eq "Invalid assignment - cannot assign ::Symbol to type ::String"
   end
 
   it "throws :error is passed invalid ruby code" do
     ruby_code = "puts 'hello "
-    expect { type_checker.run(ruby_code) }.to throw_symbol :error
     msg = catch :error do
-      type_checker.run ruby_code
+      type_checker.run "(string)", ruby_code
     end
 
     expect(msg).to eq "Parser::SyntaxError: unterminated string meets end of file"
-  end
-
-  it "throws :error with invalid rbs signatures" do
-    Dir.chdir TESTING_DIR do
-      File.open "sig/a.rbs", "wb" do |f|
-        f.puts "invalid"
-      end
-
-      ruby_code = "puts 'hello "
-      expect { type_checker.run(ruby_code) }.to throw_symbol :error
-      msg = catch :error do
-        type_checker.run ruby_code
-      end
-
-      expect(msg).to eq(<<-MSG.rstrip)
-  SignatureSyntaxError:
-    Location: sig/a.rbs:1:0...1:7
-    Message: "invalid"
-MSG
-    end
   end
 
   context "for module_function" do

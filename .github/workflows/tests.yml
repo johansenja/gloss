@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+env:
+  ImageOS: ubuntu18
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: johansenja/gloss:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: gems-cache
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+      - name: install Bundler
+        run: gem install bundler:2.2.3
+      - name: install gems
+        run: bundle install --jobs 4 --retry 3
+      - name: Compile extension
+        run: make
+        working-directory: ext/gloss
+      - name: Run tests
+        run: rake
+      - name: Install dependencies
+        run: shards install
+        working-directory: ext/gloss
+      - name: Run tests
+        run: crystal spec
+        working-directory: ext/gloss
+      - name: Build self with current state
+        run: exe/gloss build
