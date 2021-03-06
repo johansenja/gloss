@@ -9,12 +9,9 @@ env:
   ImageOS: ubuntu18
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     container:
       image: johansenja/gloss:latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,8 +26,6 @@ jobs:
         run: gem install bundler:2.2.3
       - name: install gems
         run: bundle install --jobs 4 --retry 3
-      - name: build native extensions
-        run: cd ext/gloss && make && cd -
       - name: Run tests
         run: bundle exec rake build && bundle exec rake spec
       - name: Install dependencies
@@ -40,4 +35,4 @@ jobs:
         run: crystal spec
           working_directory: ext/gloss
       - name: Build self with current state
-        run: exe/gloss build
+        run: rake build && exe/gloss build
