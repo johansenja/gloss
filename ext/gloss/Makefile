@@ -3,16 +3,8 @@ PLATFORM = $(shell uname -s)
 
 ifeq "$(PLATFORM)" "Darwin"
 TARGET = ../../lib/gls.bundle
-
-clean:
-	rm -f $(TARGET) $(TARGET).dwarf
-endif
-
-ifeq "$(PLATFORM)" "Linux"
+else
 TARGET = ../../lib/gls.so
-
-clean:
-	rm -f $(TARGET)
 endif
 
 install: all
@@ -23,4 +15,8 @@ shards:
 	shards
 
 build: ./src/gloss.cr
-	$(CRYSTAL) build  --link-flags "-shared -dynamic -Wl,-undefined,dynamic_lookup" $< -o $(TARGET) --release
+	$(CRYSTAL) build  --link-flags "-shared -Wl,-undefined,dynamic_lookup" $< -o $(TARGET) --release
+
+clean:
+	rm -f $(TARGET)
+	rm -f $(TARGET).dwarf
