@@ -18,9 +18,12 @@ RSpec::Core::RakeTask.new :spec  do |spec|
 end
 
 task :build_gem do
+  sh "ls"
   sh "cd", "ext/gloss"
+  sh "ls"
   sh "make", "all"
   sh "cd", "-"
+  sh "ls"
 end
 
 task build: [:build_gem]
