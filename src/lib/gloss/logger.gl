@@ -15,8 +15,9 @@ module Gloss
         nil => nil,
         "" => nil
       }.fetch env_log_level
-      @logger = Logger.new(real_log_level ? STDOUT : IO::NULL)
-      @logger.level = real_log_level if real_log_level
+      @logger = Logger.new(real_log_level ? STDOUT : IO::NULL).tap do |l|
+        l.level = real_log_level if real_log_level
+      end
     end
   end
 end
