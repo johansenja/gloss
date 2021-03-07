@@ -24,6 +24,7 @@ nil => nil,
       else
         IO::NULL
       end))
+      @logger.level = real_log_level if real_log_level
     end)
   end
 end
