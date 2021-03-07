@@ -202,7 +202,7 @@ EMPTY_ARRAY          }
 case name
             when "require_relative"
               (if @on_new_file_referenced
-                @on_new_file_referenced.call(name, true)
+                @on_new_file_referenced.call(args, true)
               end)
             when "module_function"
               @after_module_function = true

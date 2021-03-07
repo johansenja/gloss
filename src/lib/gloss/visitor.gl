@@ -213,7 +213,7 @@ module Gloss
         call = "#{obj}#{name}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
         case name
         when "require_relative"
-          @on_new_file_referenced.call(name, true) if @on_new_file_referenced
+          @on_new_file_referenced.call(args, true) if @on_new_file_referenced
         when "module_function"
           @after_module_function = true
         end
