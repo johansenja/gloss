@@ -1,4 +1,4 @@
-# Gloss
+# ![Gloss](./logo.svg "Gloss")
 [![Gem Version](https://badge.fury.io/rb/gloss.svg)](https://rubygems.org/gems/gloss)
 [![Tests](https://github.com/johansenja/gloss/workflows/Tests/badge.svg)](https://github.com/johansenja/gloss/actions?query=workflow%3ATests)
 [![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&label=downloads%20(total)&total_label=)](https://rubygems.org/gems/gloss)
@@ -135,7 +135,7 @@ class Language
     TS = "TypeScript"
     P = "Python"
   end
-  
+
   def favourite_language(language : Lang)
     puts "my favourite language is #{language}"
   end
@@ -211,7 +211,7 @@ end
 ```crystal
 abstract class BaseClass
   attr_reader :var
-  
+
   def initialize(@var); end
 end
 
