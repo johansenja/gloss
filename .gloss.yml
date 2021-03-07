@@ -2,3 +2,4 @@
 frozen_string_literals: true
 src_dir: src
 entrypoint: src/exe/gloss
+type_checking_strictness: "default"

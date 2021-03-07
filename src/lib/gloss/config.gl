@@ -8,7 +8,8 @@ module Gloss
       frozen_string_literals: true,
       src_dir: "src",
       entrypoint: nil,
-      strict_require: false
+      strict_require: false,
+      type_checking_strictness: "strict"
     }
   )
 
