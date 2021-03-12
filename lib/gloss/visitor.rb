@@ -185,18 +185,6 @@ EMPTY_ARRAY          }
             nil
           end)
           name = node.[](:"name")
-case name
-            when "require_relative"
-            paths = arg_arr.map do |a|
-              unless a[:type] == "LiteralNode"
-                throw :error, "Dynamic file paths are not allowed in require_relative"
-              end
-              eval(visit_node(a, scope).strip)
-            end
-            @on_new_file_referenced.call(paths, true)
-            when "module_function"
-              @after_module_function = true
-          end
           block = (if node.[](:"block")
             " #{visit_node(node.[](:"block"))}"
           else
@@ -211,6 +199,22 @@ case name
           call = "#{obj}#{name}#{opening_delimiter}#{args}#{(if has_parens
             ")"
           end)}#{block}"
+case name
+            when "require_relative"
+              (if @on_new_file_referenced
+                paths = arg_arr.map() { |a|
+                  unless                   a.[](:"type")
+.==("LiteralNode")
+                    throw(:"error", "Dynamic file paths are not allowed in require_relative")
+                  end
+                  eval(visit_node(a, scope)
+.strip)
+                }
+                @on_new_file_referenced.call(paths, true)
+              end)
+            when "module_function"
+              @after_module_function = true
+          end
           src.write_ln(call)
         when "Block"
           args = render_args(node)

@@ -22,9 +22,10 @@ module Gloss
     end
     def gem_path_for(gem_name)
       spec = Gem::Specification.find_by_path(gem_name)
-      if spec
-        spec.full_require_paths.first
-      end
+      (if spec
+        spec.full_require_paths
+.first
+      end)
     end
     def with_file_header(str)
       "#{Visitor::FILE_HEADER}\n\n#{str}"

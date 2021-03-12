@@ -110,12 +110,12 @@ nil            }
       base = File.join(source_file, "..", path)
       # @type var pn: String?
       pn = nil
-      exts = [".gl", *Gem.suffixes]
+      exts = [".gl"].concat(Gem.suffixes)
       exts.each() { |ext|
         full = File.absolute_path(base.+(ext))
-        if File.exist?(full)
+        (if File.exist?(full)
           pn = full
-        end
+        end)
       }
       (if pn
         unless         @files_to_process.include?(pn)

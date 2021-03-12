@@ -23,9 +23,12 @@ nil => nil,
         STDOUT
       else
         IO::NULL
-      end)).tap do |l|
-        l.level = real_log_level if real_log_level
-      end
+      end))
+.tap() { |l|
+        (if real_log_level
+          l.level=(real_log_level)
+        end)
+      }
     end)
   end
 end

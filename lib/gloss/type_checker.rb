@@ -61,7 +61,7 @@ case e
             when Steep::Diagnostic::Ruby::UnexpectedBlockGiven
               "Unexpected block given"
             else
-              "#{e.header_line}\n#{e.inspect}"
+              "#{e.header_line}\n#{e}"
           end
         }
 .join("\n")
