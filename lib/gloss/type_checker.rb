@@ -6,7 +6,6 @@
 require "set"
 module Gloss
   class TypeChecker
-    Project = Struct.new(:"targets")
     attr_reader(:"steep_target", :"top_level_decls", :"env", :"rbs_gem_dir")
     module Strictness
       Strict = "strict"

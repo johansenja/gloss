@@ -184,6 +184,19 @@ EMPTY_ARRAY          }
           else
             nil
           end)
+          name = node.[](:"name")
+case name
+            when "require_relative"
+            paths = arg_arr.map do |a|
+              unless a[:type] == "LiteralNode"
+                throw :error, "Dynamic file paths are not allowed in require_relative"
+              end
+              eval(visit_node(a, scope).strip)
+            end
+            @on_new_file_referenced.call(paths, true)
+            when "module_function"
+              @after_module_function = true
+          end
           block = (if node.[](:"block")
             " #{visit_node(node.[](:"block"))}"
           else
@@ -195,18 +208,9 @@ EMPTY_ARRAY          }
           else
             nil
           end)
-          name = node.[](:"name")
           call = "#{obj}#{name}#{opening_delimiter}#{args}#{(if has_parens
             ")"
           end)}#{block}"
-case name
-            when "require_relative"
-              (if @on_new_file_referenced
-                @on_new_file_referenced.call(args, true)
-              end)
-            when "module_function"
-              @after_module_function = true
-          end
           src.write_ln(call)
         when "Block"
           args = render_args(node)
@@ -254,7 +258,7 @@ case name
           path = node.[](:"value")
           src.write_ln("require \"#{path}\"")
           (if @on_new_file_referenced
-            @on_new_file_referenced.call(path, false)
+            @on_new_file_referenced.call([path], false)
           end)
         when "Assign", "OpAssign"
           src.write_ln("#{visit_node(node.[](:"target"))} #{node.[](:"op")}= #{visit_node(node.[](:"value"))

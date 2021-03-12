@@ -1,4 +1,9 @@
 RSpec.describe Gloss::ProgLoader do
+  after do
+    Dir.glob("#{TESTING_DIR}/**/*.*").each { |f| File.delete f }
+    Gloss::OUTPUT_BY_PATH.clear
+  end
+
   it "ensures paths required in other files are known" do
     file_a = <<-GLS
 require_relative "b"
@@ -10,12 +15,13 @@ JSON.parse("{}")
     GLS
     Dir.chdir TESTING_DIR do
       gloss_yml src_dir: ".",
-        app_entrypoint: "a.gl"
+        entrypoint: "a.gl",
+        strict_require: true
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
-      tc = Gloss::TypeChecker.new
-      rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
-      expect(tc.run("a.gl", rb)).to be_truthy
+      Gloss.load_config
+      pl = Gloss::ProgLoader.new
+      expect(pl.run).to be_truthy
     end
   end
 
@@ -31,12 +37,12 @@ end
     GLS
     Dir.chdir TESTING_DIR do
       gloss_yml src_dir: ".",
-        app_entrypoint: "a.gl"
+        entrypoint: "a.gl"
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
-      tc = Gloss::TypeChecker.new
-      rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
-      expect(tc.run("a.gl", rb)).to be_truthy
+      Gloss.load_config
+      pl = Gloss::ProgLoader.new
+      expect(pl.run).to be_truthy
     end
   end
 
@@ -57,12 +63,12 @@ end
     GLS
     Dir.chdir TESTING_DIR do
       gloss_yml src_dir: ".",
-        app_entrypoint: "a.gl"
+        entrypoint: "a.gl"
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
-      tc = Gloss::TypeChecker.new
-      rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
-      expect(tc.run("a.gl", rb)).to be_truthy
+      Gloss.load_config
+      pl = Gloss::ProgLoader.new
+      expect(pl.run).to be_truthy
     end
   end
 
@@ -79,12 +85,13 @@ end
         GLS
         Dir.chdir TESTING_DIR do
           gloss_yml src_dir: ".",
-            app_entrypoint: "a.gl"
+            entrypoint: "a.gl",
+            strict_require: true
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
-          tc = Gloss::TypeChecker.new
-          rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
-          expect(tc.run("a.gl", rb)).to be_truthy
+          Gloss.load_config
+          pl = Gloss::ProgLoader.new
+          expect(pl.run).to be_truthy
         end
       end
 
@@ -100,12 +107,13 @@ end
         GLS
         Dir.chdir TESTING_DIR do
           gloss_yml src_dir: ".",
-            app_entrypoint: "a.gl"
+            entrypoint: "a.gl",
+            strict_require: true
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
-          tc = Gloss::TypeChecker.new
-          rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
-          expect(tc.run("a.gl", rb)).to be_truthy
+          Gloss.load_config
+          pl = Gloss::ProgLoader.new
+          expect(pl.run).to be_truthy
         end
       end
     end
@@ -128,15 +136,16 @@ end
         GLS
         Dir.chdir TESTING_DIR do
           gloss_yml src_dir: ".",
-            app_entrypoint: "a.gl"
+            entrypoint: "a.gl",
+            strict_require: true
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
-          tc = Gloss::TypeChecker.new
-          rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
+          Gloss.load_config
+          pl = Gloss::ProgLoader.new
           err_msg = catch :error do
-            tc.run "a.gl", rb
+            pl.run
           end
-          expect(err_msg).to eq "foo"
+          expect(err_msg).to eq "Cannot resolve require path for c"
         end
       end
 
@@ -157,16 +166,16 @@ end
         GLS
         Dir.chdir TESTING_DIR do
           gloss_yml src_dir: ".",
-            app_entrypoint: "a.gl",
+            entrypoint: "a.gl",
             strict_require: true
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
-          tc = Gloss::TypeChecker.new
-          rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
+          Gloss.load_config
+          pl = Gloss::ProgLoader.new
           err_msg = catch :error do
-            tc.run "a.gl", rb
+            pl.run
           end
-          expect(err_msg).to eq "foo"
+          expect(err_msg).to eq "Cannot resolve relative path for c"
         end
       end
     end
@@ -183,17 +192,21 @@ end
           GLS
           Dir.chdir TESTING_DIR do
             gloss_yml src_dir: ".",
-              app_entrypoint: "a.gl",
+              entrypoint: "a.gl",
               type_checking_strictness: Gloss::TypeChecker::Strictness::Strict,
               strict_require: true
             gloss_file "./a.gl", file_a
             gloss_file "./b.gl", file_b
-            tc = Gloss::TypeChecker.new
-            rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
+            Gloss.load_config
+            pl = Gloss::ProgLoader.new
+            # shouldn't error at this point, as it is not ProgLoader's job to complain about
+            # undefined constants
+            expect(pl.run).to be_truthy
+            rb = Gloss::OUTPUT_BY_PATH[File.absolute_path("a.gl")]
             err_msg = catch :error do
-              tc.run "a.gl", rb
+              pl.type_checker.run "a.gl", rb
             end
-            expect(err_msg).to eq 'foo'
+            expect(err_msg.lstrip).to start_with "Cannot detect the type of the expression"
           end
         end
 
@@ -207,17 +220,21 @@ end
           GLS
           Dir.chdir TESTING_DIR do
             gloss_yml src_dir: ".",
-              app_entrypoint: "a.gl",
+              entrypoint: "a.gl",
               type_checking_strictness: Gloss::TypeChecker::Strictness::Strict,
               strict_require: true
             gloss_file "./a.gl", file_a
             gloss_file "./b.gl", file_b
-            tc = Gloss::TypeChecker.new
-            rb = Gloss::Visitor.new(Gloss::Parser.new(file_a).run, tc).run
+            Gloss.load_config
+            pl = Gloss::ProgLoader.new
+            # shouldn't error at this point, as it is not ProgLoader's job to complain about
+            # undefined constants
+            expect(pl.run).to be_truthy
+            rb = Gloss::OUTPUT_BY_PATH[File.absolute_path("a.gl")]
             err_msg = catch :error do
-              tc.run "a.gl", rb
+              pl.type_checker.run "a.gl", rb
             end
-            expect(err_msg).to eq 'foo'
+            expect(err_msg.lstrip).to start_with "Cannot detect the type of the expression"
           end
         end
       end

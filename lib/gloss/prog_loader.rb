@@ -7,6 +7,7 @@ require "rubygems/gem_runner"
 module Gloss
   OUTPUT_BY_PATH = Hash.new
   class ProgLoader
+    attr_reader(:"type_checker")
     def initialize()
       entrypoint = Config.entrypoint
       (if entrypoint.==(nil) || entrypoint.==("")
@@ -26,12 +27,14 @@ module Gloss
 .read
           contents_tree = Parser.new(file_contents)
 .run
-          on_new_file_referenced = proc() { |pa, relative|
-            (if relative
-              handle_require_relative(pa)
-            else
-              handle_require(pa)
-            end)
+          on_new_file_referenced = proc() { |ps, relative|
+            ps.each() { |pa|
+              (if relative
+                handle_require_relative(pa, path_string)
+              else
+                handle_require(pa)
+              end)
+            }
           }
           OUTPUT_BY_PATH.[]=(path_string, Visitor.new(contents_tree, @type_checker, on_new_file_referenced)
 .run)
@@ -60,7 +63,7 @@ return
         pathn = Pathname.new("#{File.join(Dir.pwd, "sig", path)}.rbs")
         gem_path = Utils.gem_path_for(path)
         (if gem_path
-          sig_files = Dir.glob(File.absolute_path(File.join(gem_path, "..", "..", "sig", "**", "*.rbs")))
+          sig_files = Dir.glob(File.absolute_path(File.join(gem_path, "..", "sig", "**", "*.rbs")))
           (if sig_files.length
 .positive?
             sig_files.each() { |fp|
@@ -81,7 +84,7 @@ return
           @type_checker.load_sig_path(pathn.to_s)
           @processed_files.add(pathn.to_s)
         else
-          rbs_stdlib_dir = File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", path))
+          rbs_stdlib_dir = File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "stdlib", path))
           (if Pathname.new(rbs_stdlib_dir)
 .exist?
             load_rbs_from_require_path(path)
@@ -103,16 +106,16 @@ nil            }
         end)
       end)
     end
-    private     def handle_require_relative(path)
-      base = File.join(@filepath, "..", path)
+    private     def handle_require_relative(path, source_file)
+      base = File.join(source_file, "..", path)
       # @type var pn: String?
       pn = nil
-      Gem.suffixes
-.each() { |ext|
+      exts = [".gl", *Gem.suffixes]
+      exts.each() { |ext|
         full = File.absolute_path(base.+(ext))
-        (if File.exist?(full)
+        if File.exist?(full)
           pn = full
-        end)
+        end
       }
       (if pn
         unless         @files_to_process.include?(pn)
@@ -120,7 +123,7 @@ nil            }
         end
       else
         (if Config.strict_require
-          throw(:"error", "Cannot resolve require path for #{pn}")
+          throw(:"error", "Cannot resolve relative path for #{path}")
         else
           Gloss.logger
 .debug("No path found for #{path}")
@@ -128,7 +131,7 @@ nil            }
       end)
     end
     private     def rbs_stdlib_path_for(libr)
-      File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "..", "stdlib", libr))
+      File.absolute_path(File.join(@type_checker.rbs_gem_dir, "..", "stdlib", libr))
     end
     private     def load_rbs_from_require_path(path)
       Dir.glob(File.join(rbs_stdlib_path_for(path), "**", "*.rbs"))

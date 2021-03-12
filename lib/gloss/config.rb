@@ -10,15 +10,18 @@ module Gloss
   Config = OpenStruct.new(default_config: {:frozen_string_literals => true,
 :src_dir => "src",
 :entrypoint => nil,
-      type_checking_strictness: "strict",
-:strict_require => false}.freeze)
-  user_config = (if File.exist?(CONFIG_PATH)
-    YAML.safe_load(File.read(CONFIG_PATH))
-  else
+:strict_require => false,
+:type_checking_strictness => "strict"}.freeze)
+  def self.load_config()
+    user_config = (if File.exist?(File.absolute_path(File.join(Dir.pwd, CONFIG_PATH)))
+      YAML.safe_load(File.read(CONFIG_PATH))
+    else
+      Config.default_config
+    end)
     Config.default_config
-  end)
-  Config.default_config
 .each() { |k, v|
-    Config.send(:"#{k}=", user_config.[](k.to_s) || v)
-  }
+      Config.send(:"#{k}=", user_config.[](k.to_s) || v)
+    }
+  end
+  load_config
 end
