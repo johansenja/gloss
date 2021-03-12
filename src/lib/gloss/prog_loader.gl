@@ -109,7 +109,7 @@ module Gloss
     private def handle_require_relative(path, source_file)
       base = File.join(source_file, "..", path)
       pn : String? = nil
-      exts = [".gl", *Gem.suffixes]
+      exts = %w[.gl].concat(Gem.suffixes)
       exts.each do |ext|
         full = File.absolute_path(base + ext)
         pn = full if File.exist?(full)
