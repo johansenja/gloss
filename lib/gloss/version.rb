@@ -4,5 +4,5 @@
   ##### See src/ to make changes
 
 module Gloss
-  VERSION = "0.1.3"
+  VERSION = "0.1.4"
 end
