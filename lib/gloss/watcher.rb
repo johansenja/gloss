@@ -6,6 +6,8 @@
 require "listen"
 module Gloss
   class Watcher
+    # @type var @listener: Listen?
+    @listener
     def initialize(paths)
       @paths = paths
       (if @paths.empty?
@@ -32,7 +34,7 @@ module Gloss
     def watch()
       Gloss.logger
 .info("Now listening for changes in #{@paths.join(", ")}")
-      listener = Listen.to(*@paths, latency: 2, only: @only) { |modified, added, removed|
+      @listener ||= Listen.to(*@paths, latency: 2, only: @only) { |modified, added, removed|
         modified.+(added)
 .each() { |f|
           Gloss.logger
@@ -64,13 +66,18 @@ nil          }
         }
       }
       begin
-        listener.start
+        @listener.start
         sleep
       rescue Interrupt
-        Gloss.logger
-.info("Interrupt signal received, shutting down")
-        exit(0)
+        kill
       end
+    end
+    def kill()
+      Gloss.logger
+.info("Interrupt signal received, shutting down")
+      (if @listener
+        @listener.stop
+      end)
     end
   end
 end

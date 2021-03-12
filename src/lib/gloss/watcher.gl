@@ -2,6 +2,8 @@ require "listen"
 
 module Gloss
   class Watcher
+    @listener: Listen?
+
     def initialize(@paths : Array[String])
       if @paths.empty?
         @paths = [File.join(Dir.pwd, Config.src_dir)]
@@ -22,7 +24,7 @@ module Gloss
 
     def watch
       Gloss.logger.info "Now listening for changes in #{@paths.join(', ')}"
-      listener = Listen.to(
+      @listener ||= Listen.to(
         *@paths,
         latency: 2,
         only: @only
@@ -55,12 +57,16 @@ module Gloss
         end
       end
       begin
-        listener.start
+        @listener.start
         sleep
       rescue Interrupt
-        Gloss.logger.info "Interrupt signal received, shutting down"
-        exit 0
+        kill
       end
+    end
+
+    def kill
+      Gloss.logger.info "Interrupt signal received, shutting down"
+      @listener.stop if @listener
     end
   end
 end

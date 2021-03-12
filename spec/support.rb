@@ -1,7 +1,7 @@
 module SpecHelpers
   def gloss_yml(**args)
     File.open("./.gloss.yml", "wb") do |file|
-      file.puts args.to_yaml
+      file.puts args.transform_keys(&:to_s).to_yaml
     end
   end
 

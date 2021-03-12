@@ -102,7 +102,7 @@ module Gloss
           members: Array.new, # TODO
           annotations: Array.new, # TODO
           location: build_location(node),
-          comment: node[:comment]
+          comment: node[:comment],
         )
         old_parent_scope = @current_scope
         @current_scope = module_type
@@ -202,6 +202,7 @@ module Gloss
                else
                  nil
                end
+        name = node[:name]
         block = node[:block] ? " #{visit_node(node[:block])}" : nil
         has_parens = !!(node[:has_parentheses] || args || block)
         opening_delimiter = if has_parens
@@ -209,11 +210,18 @@ module Gloss
                             else
                               nil
                             end
-        name = node[:name]
         call = "#{obj}#{name}#{opening_delimiter}#{args}#{")" if has_parens}#{block}"
         case name
         when "require_relative"
-          @on_new_file_referenced.call(name, true) if @on_new_file_referenced
+          if @on_new_file_referenced
+            paths = arg_arr.map do |a|
+              unless a[:type] == "LiteralNode"
+                throw :error, "Dynamic file paths are not allowed in require_relative"
+              end
+              eval(visit_node(a, scope).strip)
+            end
+            @on_new_file_referenced.call(paths, true)
+          end
         when "module_function"
           @after_module_function = true
         end
@@ -264,7 +272,7 @@ module Gloss
         path = node[:value]
         src.write_ln %(require "#{path}")
 
-        @on_new_file_referenced.call(path, false) if @on_new_file_referenced
+        @on_new_file_referenced.call([path], false) if @on_new_file_referenced
       when "Assign", "OpAssign"
 
         src.write_ln "#{visit_node(node[:target])} #{node[:op]}= #{visit_node(node[:value]).strip}"

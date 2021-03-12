@@ -21,17 +21,11 @@ module Gloss
       end)
     end
     def gem_path_for(gem_name)
-      begin
-        Gem.ui
-.instance_variable_set(:"@outs", StringIO.new)
-        Gem::GemRunner.new
-.run(["which", gem_name])
-        Gem.ui
-.outs
-.string
-      rescue SystemExit => e
-        nil
-      end
+      spec = Gem::Specification.find_by_path(gem_name)
+      (if spec
+        spec.full_require_paths
+.first
+      end)
     end
     def with_file_header(str)
       "#{Visitor::FILE_HEADER}\n\n#{str}"

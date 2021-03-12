@@ -6,13 +6,23 @@
 require "set"
 module Gloss
   class TypeChecker
-    Project = Struct.new(:"targets")
     attr_reader(:"steep_target", :"top_level_decls", :"env", :"rbs_gem_dir")
+    module Strictness
+      Strict = "strict"
+      Lenient = "lenient"
+      Default = "default"
+    end
     def initialize()
-      @steep_target = Steep::Project::Target.new(name: "gloss", options:       Steep::Project::Options.new
-.tap() { |o|
-        o.allow_unknown_constant_assignment=(true)
-      }, source_patterns: ["**/*.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
+      options = Steep::Project::Options.new
+case Config.type_checking_strictness
+        when Strictness::Strict
+          options.apply_strict_typing_options!
+        when Strictness::Lenient
+          options.apply_lenient_typing_options!
+        else
+          options.apply_default_typing_options!
+      end
+      @steep_target = Steep::Project::Target.new(name: "gloss", options: options, source_patterns: ["**/*.rb"], ignore_patterns:       Array.new, signature_patterns: ["sig"])
       @top_level_decls = Set.new
       @rbs_gem_dir = Utils.gem_path_for("rbs")
       env_loader = RBS::EnvironmentLoader.new
@@ -51,7 +61,7 @@ case e
             when Steep::Diagnostic::Ruby::UnexpectedBlockGiven
               "Unexpected block given"
             else
-              "#{e.header_line}\n#{e.inspect}"
+              "#{e.header_line}\n#{e}"
           end
         }
 .join("\n")
