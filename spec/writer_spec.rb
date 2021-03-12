@@ -39,4 +39,46 @@ RSpec.describe Gloss::Writer do
       FileUtils.rm_rf(path.parent)
     end
   end
+
+  it "will prettify output if prettify_output_executable_path is set" do
+    Dir.chdir TESTING_DIR do
+      gloss_yml prettify_output_executable_path: "rufo"
+      Gloss.load_config
+      path = Pathname("lib/bar.gl")
+      expect(path.exist?).to be false
+      Gloss::Writer.new("p   hello:     :world", nil, path).run
+      expect(path.exist?).to be true
+      expect(path.read).to eq "p hello: :world\n"
+    ensure
+      FileUtils.rm(path)
+    end
+  end
+
+  it "won't prettify output if prettify_output_executable_path is nil" do
+    Dir.chdir TESTING_DIR do
+      gloss_yml prettify_output_executable_path: nil
+      Gloss.load_config
+      path = Pathname("lib/bar.gl")
+      expect(path.exist?).to be false
+      Gloss::Writer.new("p   hello:     :world", nil, path).run
+      expect(path.exist?).to be true
+      expect(path.read).to eq "p   hello:     :world\n"
+    ensure
+      FileUtils.rm(path)
+    end
+  end
+
+  it "won't prettify output if prettify_output_executable_path is not set" do
+    Dir.chdir TESTING_DIR do
+      gloss_yml
+      Gloss.load_config
+      path = Pathname("lib/bar.gl")
+      expect(path.exist?).to be false
+      Gloss::Writer.new("p   hello:     :world", nil, path).run
+      expect(path.exist?).to be true
+      expect(path.read).to eq "p   hello:     :world\n"
+    ensure
+      FileUtils.rm(path)
+    end
+  end
 end

@@ -24,6 +24,9 @@ module Gloss
         end)
         file.puts(@content)
       }
+      (if Config.prettify_output_executable_path
+        system(Config.prettify_output_executable_path, @output_path.to_s)
+      end)
     end
     private     def shebang()
       (if @output_path.executable?

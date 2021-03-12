@@ -21,6 +21,9 @@ module Gloss
         file.puts sb if sb
         file.puts @content
       end
+      if Config.prettify_output_executable_path
+        system Config.prettify_output_executable_path, @output_path.to_s
+      end
     end
 
     private def shebang
