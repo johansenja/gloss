@@ -26,16 +26,7 @@ module Gloss
       }
       (if Config.prettify_output_executable_path
         pid = Process.spawn("#{Config.prettify_output_executable_path} #{@output_path.to_s}")
-        Process.waitpid(pid, Process::WNOHANG)
-        sleep(5)
-        begin
-          Process.kill(9, pid)
-        rescue
-        else
-          Gloss.logger
-.error("Failed to prettify output for #{@output_path}. Skipping\n\n#{e
-.message}")
-        end
+        Process.waitpid(pid)
       end)
     end
     private     def shebang()

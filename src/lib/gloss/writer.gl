@@ -25,15 +25,7 @@ module Gloss
         # would loooove to just be using `system` to run this, but it hangs when running the test
         # suite 😕 🤷‍♂️
         pid = Process.spawn "#{Config.prettify_output_executable_path} #{@output_path.to_s}"
-        Process.waitpid pid, Process::WNOHANG
-        sleep 5
-        begin
-          Process.kill 9, pid
-        rescue
-          # ok, process already dead
-        else
-          Gloss.logger.error "Failed to prettify output for #{@output_path}. Skipping\n\n#{e.message}"
-        end
+        Process.waitpid pid
       end
     end
 
