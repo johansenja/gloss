@@ -19,7 +19,9 @@ module Gloss
     end
     def run()
       @files_to_process.each() { |path_string|
-        unless @processed_files.member?(path_string) || OUTPUT_BY_PATH.[](path_string)
+        if path_string.end_with? ".rbs"
+          @type_checker.load_sig_path path_string
+        elsif !@processed_files.member?(path_string) || !OUTPUT_BY_PATH.[](path_string)
           Gloss.logger
 .debug("Loading #{path_string}")
           path = Utils.absolute_path(path_string)
