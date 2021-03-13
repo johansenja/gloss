@@ -227,6 +227,13 @@ Child.new(123).what_is_var # Ok - "var is 123"
 
 ## Usage:
 
+**Note: This gem currently requires Crystal to be installed. If you don't wish to install it, or run into other installation problems, consider using the Docker image:**
+
+```dockerfile
+FROM johansenja/gloss:latest
+# ...
+```
+
 ```ruby
 # Gemfile
 group :development do
