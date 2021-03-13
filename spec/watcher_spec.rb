@@ -25,7 +25,7 @@ RSpec.describe Gloss::Watcher do
       end
       sleep 3
     ensure
-      w.kill
+      w.raise(Interrupt)
     end
     expect((Pathname(TESTING_DIR) / "src" / "new_file.gl").exist?).to be true
     expect((Pathname(TESTING_DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello world\")\n")
@@ -52,7 +52,7 @@ RSpec.describe Gloss::Watcher do
       end
       sleep 3
     ensure
-      w.kill
+      w.raise Interrupt
     end
 
     expect((Pathname(TESTING_DIR) / "new_file.rb").read).to eq Gloss::Utils.with_file_header("puts(\"hello\")\n")
@@ -78,7 +78,7 @@ RSpec.describe Gloss::Watcher do
       File.delete(File.join("src", "new_file.gl"))
       sleep 3
     ensure
-      w.kill
+      w.raise Interrupt
       expect(Pathname("new_file.rb").exist?).to be false
     end
   end

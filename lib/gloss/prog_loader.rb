@@ -19,27 +19,31 @@ module Gloss
     end
     def run()
       @files_to_process.each() { |path_string|
-        unless @processed_files.member?(path_string) || OUTPUT_BY_PATH.[](path_string)
-          Gloss.logger
+        (if path_string.end_with?(".rbs")
+          @type_checker.load_sig_path(path_string)
+        else
+          (if !@processed_files.member?(path_string) || !OUTPUT_BY_PATH.[](path_string)
+            Gloss.logger
 .debug("Loading #{path_string}")
-          path = Utils.absolute_path(path_string)
-          file_contents = File.open(path)
+            path = Utils.absolute_path(path_string)
+            file_contents = File.open(path)
 .read
-          contents_tree = Parser.new(file_contents)
+            contents_tree = Parser.new(file_contents)
 .run
-          on_new_file_referenced = proc() { |ps, relative|
-            ps.each() { |pa|
-              (if relative
-                handle_require_relative(pa, path_string)
-              else
-                handle_require(pa)
-              end)
+            on_new_file_referenced = proc() { |ps, relative|
+              ps.each() { |pa|
+                (if relative
+                  handle_require_relative(pa, path_string)
+                else
+                  handle_require(pa)
+                end)
+              }
             }
-          }
-          OUTPUT_BY_PATH.[]=(path_string, Visitor.new(contents_tree, @type_checker, on_new_file_referenced)
+            OUTPUT_BY_PATH.[]=(path_string, Visitor.new(contents_tree, @type_checker, on_new_file_referenced)
 .run)
-          @processed_files.add(path_string)
-        end
+            @processed_files.add(path_string)
+          end)
+        end)
       }
 @type_checker
     end

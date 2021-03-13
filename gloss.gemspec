@@ -17,11 +17,12 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "fast_blank"
   s.add_runtime_dependency "listen"
-  s.add_runtime_dependency "rbs", "~>1.0.4"
-  s.add_runtime_dependency "steep", "~>0.41.0"
+  s.add_runtime_dependency "rbs", "1.0.4"
+  s.add_runtime_dependency "steep", "0.41.0"
 
   s.add_development_dependency "pry-byebug"
   s.add_development_dependency "rake-compiler"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rubocop"
+  s.add_development_dependency "rufo"
 end
