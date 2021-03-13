@@ -25,8 +25,7 @@ module Gloss
         file.puts(@content)
       }
       (if Config.prettify_output_executable_path
-        pid = Process.spawn("#{Config.prettify_output_executable_path} #{@output_path.to_s}")
-        Process.waitpid(pid)
+        system(Config.prettify_output_executable_path, @output_path.to_s)
       end)
     end
     private     def shebang()
