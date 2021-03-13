@@ -20,23 +20,6 @@ efficiency, and to enhance ruby's goal of developer happiness and productivity.
 
 This project is at a stage where the core non-crystal parts are written in Gloss and compile to ruby (essentially self-hosting), albeit with the type checking being fairly loose. However the project is still in the very early stages; with (as of yet) no Linux support nor error handling (see roadmap below). Use at your own discretion!
 
-### Approx. roadmap:
-
-- Improve error handling and logging (currently almost non-existant)
-- Address Linux compatibility (currently more or less non-existant)
-- Implement different strictnesses of type checking
-- Metaprogramming helpers/safety:*
-  - Abstract classes and methods
-  - Method lookup/existence checking at compile time
-  - Method overloading
-
-#### Related items:
-
-- Rails helpers; probably some time away*
-- Editor plugins/syntax highlighting/langserver; probably some time away*
-
-*__Dependent on popularity__
-
 ## Examples:
 
 #### Type checking:
@@ -225,7 +208,7 @@ BaseClass.new(123) # Error - can't instantiate abstract class
 Child.new(123).what_is_var # Ok - "var is 123"
 ```
 
-## Usage:
+## Getting started:
 
 **Note: This gem currently requires Crystal to be installed. If you don't wish to install it, or run into other installation problems, consider using the Docker image:**
 
@@ -252,6 +235,10 @@ then
 then
 
 `mkdir src && echo "puts 'hello world'" > src/hello_world.gl`
+
+then
+
+`vi .gloss.yml # set app_entrypoint to src/hello_world.gl`
 
 then
 
