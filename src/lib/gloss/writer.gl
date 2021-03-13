@@ -22,7 +22,24 @@ module Gloss
         file.puts @content
       end
       if Config.prettify_output_executable_path
-        system Config.prettify_output_executable_path, @output_path.to_s
+        # would loooove to just be using `system` to run this, but it hangs when running the test
+        # suite 😕 🤷‍♂️
+        begin
+          pid = Process.spawn "#{Config.prettify_output_executable_path} #{@output_path.to_s}"
+          th = Thread.new do
+            sleep 5
+            begin
+              Process.kill 9, pid
+            rescue
+               # ok, process already dead
+            else
+              Gloss.logger.error "Failed to prettify output for #{@output_path}. Skipping\n\n#{e.message}"
+            end
+          end
+          sleep 5
+        ensure
+          th.kill
+        end
       end
     end
 
