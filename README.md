@@ -237,7 +237,7 @@ then
 
 then
 
-`vi .gloss.yml # set app_entrypoint to src/hello_world.gl`
+`vi .gloss.yml # set entrypoint to src/hello_world.gl`
 
 then
 
