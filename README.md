@@ -4,7 +4,7 @@
 [![Total Downloads](http://ruby-gem-downloads-badge.herokuapp.com/gloss?type=total&color=green&label=downloads%20(total)&total_label=)](https://rubygems.org/gems/gloss)
 [![Current Version](http://ruby-gem-downloads-badge.herokuapp.com/gloss?color=green&label=downloads%20(current%20version)&metric=true)](https://rubygems.org/gems/gloss)
 
-[Gloss](https://en.wikipedia.org/wiki/Gloss_(annotation)) is a language project inspired by [Crystal](https://github.com/crystal-lang/crystal), Ruby's [RBS](https://github.com/ruby/rbs) and [Steep](https://github.com/soutaro/steep). It compiles to pure Ruby.
+[Gloss](https://en.wikipedia.org/wiki/Gloss_(annotation)) is a language project inspired by [Crystal](https://github.com/crystal-lang/crystal), Ruby's [RBS](https://github.com/ruby/rbs), [Steep](https://github.com/soutaro/steep) and [TypeScript](https://github.com/microsoft/TypeScript). It compiles to pure Ruby.
 
 ### Current features
 
