@@ -246,3 +246,9 @@ then
 then
 
 `ruby ./hello_world.rb`
+
+## Example Projects:
+
+- This one! Gloss is mostly self-hosting, so check out the `./src` and `./.gloss.yml`, or the generated output in `./lib`
+- [onefiveone](https://github.com/johansenja/onefiveone) - A Roman Numeral CLI. Read the accompanying article [here](https://johansenja.medium.com/ruby-crystal-pt-ii-a-simple-app-using-gloss-368ff849db67)
+- More to come (including web apps)! Also check out `Used by` section in the sidebar
