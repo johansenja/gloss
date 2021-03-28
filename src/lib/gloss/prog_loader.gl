@@ -6,29 +6,31 @@ module Gloss
   class ProgLoader
     attr_reader :type_checker
 
-    def initialize
-      entrypoint = Config.entrypoint
-      if entrypoint == nil || entrypoint == ""
+    def initialize(entrypoint_path = nil, entrypoint_contents = nil)
+      entrypoint_path ||= Config.entrypoint
+      if entrypoint_path == nil || entrypoint_path == ""
         throw :error, "Entrypoint is not yet set in .gloss.yml"
       end
-      @files_to_process = [
-        Utils.absolute_path(Config.entrypoint),
-        # __dir__ is typed as String? - but it shouldn't be nil here
-        Utils.absolute_path(File.join((__dir__||""), "..", "..", "sig", "core.rbs"))
-      ]
+      entrypoint = if entrypoint_path && entrypoint_contents
+          ep = entrypoint_path == Runtime::NON_EXISTENT_FILEPATH ? entrypoint_path : Utils.absolute_path(entrypoint_path)
+          [ep, entrypoint_contents]
+        else
+          Utils.abs_path_with_contents(entrypoint_path)
+        end
+      # __dir__ is typed as String? - but it shouldn't be nil here
+      core_types = Utils.abs_path_with_contents(File.join((__dir__||""), "..", "..", "sig", "core.rbs"))
+      @files_to_process = [entrypoint, core_types]
       @processed_files = Set.new
       @type_checker = TypeChecker.new
     end
 
     def run
-      @files_to_process.each do |path_string|
+      @files_to_process.each do |(path_string, file_contents)|
         # currently steep would give an `unexpected jump` if next was used
         if path_string.end_with? ".rbs"
           @type_checker.load_sig_path path_string
         elsif !@processed_files.member?(path_string) || !OUTPUT_BY_PATH.[](path_string)
           Gloss.logger.debug "Loading #{path_string}"
-          path = Utils.absolute_path(path_string)
-          file_contents = File.open(path).read
           contents_tree = Parser.new(file_contents).run
           on_new_file_referenced = proc do |ps, relative|
             ps.each do |pa|
@@ -58,7 +60,7 @@ module Gloss
         base = File.join(Dir.pwd, path)
         fp = base + ".gl"
         if File.exist? fp
-          @files_to_process << fp
+          @files_to_process << Utils.abs_path_with_contents(fp)
         end
         return
       end
@@ -67,7 +69,7 @@ module Gloss
       full = File.absolute_path("#{File.join(Config.src_dir, "lib", path)}.gl")
       pathn = Pathname.new full
       if pathn.file?
-        @files_to_process << pathn.to_s
+        @files_to_process << Utils.abs_path_with_contents(pathn.to_s)
       else
         # no .gl file available - .rbs file available?
         # TODO: verify file is still actually requireable
@@ -118,7 +120,9 @@ module Gloss
       end
 
       if pn
-        @files_to_process << pn unless @files_to_process.include? pn
+        unless @files_to_process.any? { |(fp, _)| fp == pn }
+          @files_to_process << Utils.abs_path_with_contents(pn)
+        end
       elsif Config.strict_require
         throw :error, "Cannot resolve relative path for #{path}"
       else

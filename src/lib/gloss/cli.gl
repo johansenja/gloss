@@ -21,6 +21,7 @@ module Gloss
         when "version", "--version", "-v"
           puts Gloss::VERSION
         when "watch", "build"
+          Gloss.load_config
           type_checker = ProgLoader.new.run
           if command == "watch"
             files = files.map do |f|

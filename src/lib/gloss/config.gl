@@ -22,6 +22,4 @@ module Gloss
                   end
     Config.default_config.each { |k, v| Config.send(:"#{k}=", user_config[k.to_s] || v) }
   end
-
-  load_config
 end

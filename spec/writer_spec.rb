@@ -2,6 +2,9 @@ require 'tempfile'
 require "fileutils"
 
 RSpec.describe Gloss::Writer do
+
+  before(:all) { Gloss.load_config }
+
   it "overwrites an existing file" do
     file = Tempfile.new
     old_content = "abc"

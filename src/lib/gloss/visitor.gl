@@ -151,7 +151,7 @@ module Gloss
               rest_keywords: args.dig(:types, :rest_keywords),
               return_type: return_type
             ),
-            block: node[:yield_arg_count] ?
+            block: node[:yield_arg_count] || args.dig(:types, :block_arg) ?
               RBS::Types::Block.new(
                 type: RBS::Types::Function.new(
                   required_positionals: Array.new,
@@ -523,7 +523,8 @@ module Gloss
       okw : Hash[Symbol, Any] = node.fetch(:opt_kw_args) { EMPTY_HASH }
       rest_p : String? = node[:rest_p_args] ? visit_node(node[:rest_p_args]) : nil
       rest_kw : Hash[Symbol, Any]? = node[:rest_kw_args]
-      return nil if [rp, op, rkw, okw, rest_p, rest_kw].all? { |a| a && a.empty? }
+      block_arg : Hash[Symbol, Any]? = node[:block_arg]
+      return nil if [rp, op, rkw, okw, rest_p, rest_kw, block_arg].all? { |a| a && a.empty? }
 
       contents = [
         rp.map { |a| visit_node(a) },
@@ -531,7 +532,8 @@ module Gloss
         rkw.map { |name, _| "#{name}:" },
         okw.map { |name, value| "#{name}: #{value}" },
         rest_p ? "*#{rest_p}" : "",
-        rest_kw ? "**#{visit_node(rest_kw)}" : ""
+        rest_kw ? "**#{visit_node(rest_kw)}" : "",
+        block_arg ? "&#{visit_node(block_arg)}" : ""
       ].reject(&:empty?).flatten.join(", ")
       representation = "(#{contents})"
       rp_args = rp.map do |a|
@@ -561,6 +563,7 @@ module Gloss
           trailing_positionals: EMPTY_ARRAY, # TODO
           required_keywords: node[:req_kw_args] || EMPTY_HASH,
           optional_keywords: node[:opt_kw_args] || EMPTY_HASH,
+          block_arg: true,
           rest_keywords: node[:rest_kw_args] ?
             RBS::Types::Function::Param.new(
               name: visit_node(node[:rest_kw_args]).to_sym,

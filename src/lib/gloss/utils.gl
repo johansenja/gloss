@@ -31,5 +31,10 @@ module Gloss
       src_path.sub("#{Config.src_dir}/", "")
               .sub(/\.gl$/, ".rb")
     end
+
+    def abs_path_with_contents(path)
+      abs_path = absolute_path(path)
+      return abs_path, File.open(abs_path).read
+    end
   end
 end
