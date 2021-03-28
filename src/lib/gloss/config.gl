@@ -9,7 +9,7 @@ module Gloss
       src_dir: "src",
       entrypoint: nil,
       strict_require: false,
-      type_checking_strictness: "strict",
+      type_checking_strictness: "lenient",
       prettify_output_executable_path: nil
     }
   )

@@ -10,7 +10,7 @@ module Gloss
 :src_dir => "src",
 :entrypoint => nil,
 :strict_require => false,
-:type_checking_strictness => "strict",
+:type_checking_strictness => "lenient",
 :prettify_output_executable_path => nil}.freeze)
   def self.load_config()
     user_config = (if File.exist?(File.absolute_path(File.join(Dir.pwd, CONFIG_PATH)))
