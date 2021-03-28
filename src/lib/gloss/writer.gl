@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "pathname"
 require "fileutils"
 
@@ -8,30 +6,45 @@ module Gloss
     def initialize(
       @content,
       @src_path : String,
-      @output_path : Pathname? = Pathname.new(
-        Utils.src_path_to_output_path(src_path)
-      )
+      @output : Pathname | IO | NilClass = nil
     )
     end
 
     def run
-      FileUtils.mkdir_p(@output_path.parent) unless @output_path.parent.exist?
-      File.open(@output_path, "wb") do |file|
+      write_to_output do |otpt|
         sb = shebang
-        file.puts sb if sb
-        file.puts @content
-      end
-      if Config.prettify_output_executable_path
-        system Config.prettify_output_executable_path, @output_path.to_s
+        otpt.puts sb if sb
+        otpt.puts @content
       end
     end
 
     private def shebang
-      if @output_path.executable?
-        first_line = File.open(@src_path) { |f| f.readline }
-        first_line.start_with?("#!") ? first_line : nil
+      case @output
+      when Pathname
+        if @output.executable?
+          first_line = File.open(@src_path) { |f| f.readline }
+          first_line.start_with?("#!") ? first_line : nil
+        end
       else
         nil
+      end
+    end
+
+    private def write_to_output(&blk)
+      case @output
+      when IO, StringIO
+        # blk.call(@output)
+        yield @output
+      else
+        output = @output || Pathname.new(Utils.src_path_to_output_path(@src_path))
+        FileUtils.mkdir_p(output.parent) unless output.parent.exist?
+        File.open(output, "wb") do |file|
+          # blk.call(file)
+          yield file
+        end
+        if Config.prettify_output_executable_path
+          system Config.prettify_output_executable_path, @output.to_s
+        end
       end
     end
   end
