@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    gloss (0.1.6)
+    gloss (0.1.7)
       fast_blank
       listen
       rbs (= 1.0.4)
@@ -25,10 +25,10 @@ GEM
     diff-lcs (1.4.4)
     fast_blank (1.0.0)
     ffi (1.15.0)
-    i18n (1.8.9)
+    i18n (1.8.10)
       concurrent-ruby (~> 1.0)
     language_server-protocol (3.15.0.2)
-    listen (3.5.0)
+    listen (3.5.1)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     method_source (1.0.0)
