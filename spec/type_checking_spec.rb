@@ -1,5 +1,5 @@
 RSpec.describe Gloss::TypeChecker do
-  let!(:type_checker) { Gloss::TypeChecker.new }
+  let!(:type_checker) { Gloss::TypeChecker.new(".") }
 
   it "reports type errors in type notations" do
     output = Gloss::Visitor.new(
@@ -291,7 +291,7 @@ end
       ).run
       type_checker.ready_for_checking!
       a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
-      meth = a_def.members.find { |m| m.name == :not_sing_inst  }
+      meth = a_def.members.find { |m| m.name == :not_sing_inst }
       expect(meth.kind).to eq :instance
     end
 
@@ -312,9 +312,9 @@ end
       ).run
       type_checker.ready_for_checking!
       a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
-      meth1 = a_def.members.find { |m| m.name == :not_sing_inst  }
-      meth2 = a_def.members.find { |m| m.name == :sing_inst1  }
-      meth3 = a_def.members.find { |m| m.name == :sing_inst2  }
+      meth1 = a_def.members.find { |m| m.name == :not_sing_inst }
+      meth2 = a_def.members.find { |m| m.name == :sing_inst1 }
+      meth3 = a_def.members.find { |m| m.name == :sing_inst2 }
       expect(meth1.kind).to eq :instance
       expect(meth2.kind).to eq :singleton_instance
       expect(meth3.kind).to eq :singleton_instance
@@ -339,7 +339,7 @@ end
       type_checker.ready_for_checking!
       a_def = type_checker.env.declarations.find { |d| d.name.name == :A }
       b_def = a_def.members.find { |m| m.name.name == :B }
-      meth = b_def.members.find { |m| m.name == :not_sing_inst  }
+      meth = b_def.members.find { |m| m.name == :not_sing_inst }
       expect(meth.kind).to eq :instance
       expect(a_def.members.find { |m| m.name == :sing_inst }.kind).to eq :singleton_instance
     end

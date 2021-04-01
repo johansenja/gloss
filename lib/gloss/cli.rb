@@ -27,7 +27,8 @@ case command
             puts(Gloss::VERSION)
           when "watch", "build"
             Gloss.load_config
-            type_checker = ProgLoader.new
+            type_checker = TypeChecker.new(Config.src_dir)
+            type_checker = ProgLoader.new(type_checker)
 .run
             (if command.==("watch")
               files = files.map() { |f|

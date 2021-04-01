@@ -20,7 +20,8 @@ JSON.parse("{}")
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
       Gloss.load_config
-      pl = Gloss::ProgLoader.new
+      tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+      pl = Gloss::ProgLoader.new(tc)
       expect(pl.run).to be_truthy
     end
   end
@@ -41,7 +42,8 @@ end
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
       Gloss.load_config
-      pl = Gloss::ProgLoader.new
+      tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+      pl = Gloss::ProgLoader.new(tc)
       expect(pl.run).to be_truthy
     end
   end
@@ -67,7 +69,8 @@ end
       gloss_file "./a.gl", file_a
       gloss_file "./b.gl", file_b
       Gloss.load_config
-      pl = Gloss::ProgLoader.new
+      tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+      pl = Gloss::ProgLoader.new(tc)
       expect(pl.run).to be_truthy
     end
   end
@@ -90,7 +93,8 @@ end
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
           Gloss.load_config
-          pl = Gloss::ProgLoader.new
+          tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+          pl = Gloss::ProgLoader.new(tc)
           expect(pl.run).to be_truthy
         end
       end
@@ -112,7 +116,8 @@ end
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
           Gloss.load_config
-          pl = Gloss::ProgLoader.new
+          tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+          pl = Gloss::ProgLoader.new(tc)
           expect(pl.run).to be_truthy
         end
       end
@@ -141,7 +146,8 @@ end
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
           Gloss.load_config
-          pl = Gloss::ProgLoader.new
+          tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+          pl = Gloss::ProgLoader.new(tc)
           err_msg = catch :error do
             pl.run
           end
@@ -171,7 +177,8 @@ end
           gloss_file "./a.gl", file_a
           gloss_file "./b.gl", file_b
           Gloss.load_config
-          pl = Gloss::ProgLoader.new
+          tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+          pl = Gloss::ProgLoader.new(tc)
           err_msg = catch :error do
             pl.run
           end
@@ -198,7 +205,8 @@ end
             gloss_file "./a.gl", file_a
             gloss_file "./b.gl", file_b
             Gloss.load_config
-            pl = Gloss::ProgLoader.new
+            tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+            pl = Gloss::ProgLoader.new(tc)
             # shouldn't error at this point, as it is not ProgLoader's job to complain about
             # undefined constants
             expect(pl.run).to be_truthy
@@ -226,7 +234,8 @@ end
             gloss_file "./a.gl", file_a
             gloss_file "./b.gl", file_b
             Gloss.load_config
-            pl = Gloss::ProgLoader.new
+            tc = Gloss::TypeChecker.new(Gloss::Config.src_dir)
+            pl = Gloss::ProgLoader.new(tc)
             # shouldn't error at this point, as it is not ProgLoader's job to complain about
             # undefined constants
             expect(pl.run).to be_truthy
