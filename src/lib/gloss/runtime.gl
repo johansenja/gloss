@@ -8,7 +8,8 @@ module Gloss
       out_io = StringIO.new
       error_msg = catch :error do
         tree = Parser.new(str).run
-        tc = ProgLoader.new(NON_EXISTENT_FILEPATH, str).run
+        tc = TypeChecker.new(".")
+        tc = ProgLoader.new(tc, NON_EXISTENT_FILEPATH, str).run
         rb_output = Visitor.new(tree, tc).run
         tc.run(NON_EXISTENT_FILEPATH, rb_output)
         Writer.new(rb_output, NON_EXISTENT_FILEPATH, out_io).run

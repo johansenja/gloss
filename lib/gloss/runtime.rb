@@ -11,7 +11,8 @@ module Gloss
       error_msg = catch(:"error") { ||
         tree = Parser.new(str)
 .run
-        tc = ProgLoader.new(NON_EXISTENT_FILEPATH, str)
+        tc = TypeChecker.new(".")
+        tc = ProgLoader.new(tc, NON_EXISTENT_FILEPATH, str)
 .run
         rb_output = Visitor.new(tree, tc)
 .run

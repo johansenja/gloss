@@ -7,7 +7,8 @@ module Gloss
   OUTPUT_BY_PATH = Hash.new
   class ProgLoader
     attr_reader(:"type_checker")
-    def initialize(entrypoint_path = nil, entrypoint_contents = nil)
+    def initialize(type_checker, entrypoint_path = nil, entrypoint_contents = nil)
+      @type_checker = type_checker
       entrypoint_path ||= Config.entrypoint
       (if entrypoint_path.==(nil) || entrypoint_path.==("")
         throw(:"error", "Entrypoint is not yet set in .gloss.yml")
@@ -25,7 +26,6 @@ module Gloss
       core_types = Utils.abs_path_with_contents(File.join(__dir__ || "", "..", "..", "sig", "core.rbs"))
       @files_to_process = [entrypoint, core_types]
       @processed_files = Set.new
-      @type_checker = TypeChecker.new
     end
     def run()
       @files_to_process.each() { |__arg0|

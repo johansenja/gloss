@@ -1,4 +1,10 @@
 RSpec.describe Gloss::Runtime do
+  before :all do
+    Gloss::Config = OpenStruct.new(
+      default_config: Gloss::Config.default_config
+    )
+  end
+
   it "successfully parses a hello world" do
     Dir.chdir TESTING_DIR do
       output, err = Gloss::Runtime.process_string("puts  'hello world'")

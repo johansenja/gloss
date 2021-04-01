@@ -11,7 +11,7 @@ module Gloss
       Lenient = "lenient"
       Default = "default"
     end
-    def initialize()
+    def initialize(src_dir)
       options = Steep::Project::Options.new
 case Config.type_checking_strictness
         when Strictness::Strict
@@ -26,7 +26,7 @@ case Config.type_checking_strictness
       @rbs_gem_dir = Utils.gem_path_for("rbs")
       env_loader = RBS::EnvironmentLoader.new
       @env = RBS::Environment.from_loader(env_loader)
-      project = Steep::Project.new(steepfile_path:       Pathname.new(Config.src_dir)
+      project = Steep::Project.new(steepfile_path:       Pathname.new(src_dir)
 .realpath)
       project.targets
 .<<(@steep_target)

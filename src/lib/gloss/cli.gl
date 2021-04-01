@@ -22,7 +22,8 @@ module Gloss
           puts Gloss::VERSION
         when "watch", "build"
           Gloss.load_config
-          type_checker = ProgLoader.new.run
+          type_checker = TypeChecker.new(Config.src_dir)
+          type_checker = ProgLoader.new(type_checker).run
           if command == "watch"
             files = files.map do |f|
               path = Pathname.new(f).absolute? ? f : File.join(Dir.pwd, f)
