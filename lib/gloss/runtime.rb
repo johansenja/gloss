@@ -7,6 +7,9 @@ module Gloss
   class Runtime
     NON_EXISTENT_FILEPATH = "__string__"
     def self.process_string(str, options = Config.default_config)
+      (if str.empty?
+        return ["", nil].freeze
+      end)
       out_io = StringIO.new
       error_msg = catch(:"error") { ||
         tree = Parser.new(str)

@@ -5,6 +5,8 @@ module Gloss
     NON_EXISTENT_FILEPATH = "__string__"
 
     def self.process_string(str : String, options = Config.default_config)
+      return "", nil if str.empty?
+
       out_io = StringIO.new
       error_msg = catch :error do
         tree = Parser.new(str).run
